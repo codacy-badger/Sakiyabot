@@ -10,7 +10,7 @@ from telegram.utils.helpers import mention_html
 
 from tg_bot import dispatcher, BAN_STICKER
 from tg_bot.modules.disable import DisableAbleCommandHandler
-from tg_bot.modules.helper_funcs.chat_status import is_user_admin, bot_admin, user_admin_no_reply, user_admin, \
+from tg_bot.modules.helper_funcs.chat_status import is_user_admin, bot_admin, user_admin, \
     can_restrict
 from tg_bot.modules.helper_funcs.extraction import extract_text, extract_user_and_text, extract_user
 from tg_bot.modules.helper_funcs.filters import CustomFilters
@@ -96,7 +96,7 @@ def warn(user: User, chat: Chat, reason: str, message: Message, warner: User = N
 
 
 @run_async
-@user_admin_no_reply
+@user_admin
 @bot_admin
 @loggable
 def button(update, context) -> str:
@@ -121,7 +121,7 @@ def button(update, context) -> str:
                                                                 user_member.user.id)
         else:
             update.effective_message.edit_text(
-                "User {} has already no warns.".format(mention_html(user_member.user.id, user_member.user.first_name)),
+                "User {} has already no warns.".format(mention_html(member.user.id, member.user.first_name)),
                 parse_mode=ParseMode.HTML)
 
     return ""
