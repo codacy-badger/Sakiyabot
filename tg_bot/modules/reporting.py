@@ -3,22 +3,24 @@ from typing import Optional, List
 
 from telegram import Message, Chat, Update, Bot, User, ParseMode
 from telegram.error import BadRequest, Unauthorized
-from telegram.ext import CommandHandler, RegexHandler, run_async, Filters
+from telegram.ext import CommandHandler, MessageHandler, run_async, Filters
 from telegram.utils.helpers import mention_html
 
 from tg_bot import dispatcher, LOGGER
 from tg_bot.modules.helper_funcs.chat_status import user_not_admin, user_admin
 from tg_bot.modules.log_channel import loggable
 from tg_bot.modules.sql import reporting_sql as sql
+from tg_bot.modules.helper_funcs.handlers import CustomCommandHandler
 
 REPORT_GROUP = 5
 
 
 @run_async
 @user_admin
-def report_setting(bot: Bot, update: Update, args: List[str]):
+def report_setting(update, context):
     chat = update.effective_chat  # type: Optional[Chat]
     msg = update.effective_message  # type: Optional[Message]
+    args = context.args
 
     if chat.type == chat.PRIVATE:
         if len(args) >= 1:
@@ -51,7 +53,7 @@ def report_setting(bot: Bot, update: Update, args: List[str]):
 @run_async
 @user_not_admin
 @loggable
-def report(bot: Bot, update: Update) -> str:
+def report(update, context) -> str:
     message = update.effective_message  # type: Optional[Message]
     chat = update.effective_chat  # type: Optional[Chat]
     user = update.effective_user  # type: Optional[User]
@@ -89,7 +91,7 @@ def report(bot: Bot, update: Update) -> str:
 
             if sql.user_should_report(admin.user.id):
                 try:
-                    bot.send_message(admin.user.id, msg + link, parse_mode=ParseMode.HTML)
+                    context.bot.send_message(admin.user.id, msg + link, parse_mode=ParseMode.HTML)
 
                     if should_forward:
                         message.reply_to_message.forward(admin.user.id)
@@ -133,9 +135,9 @@ NOTE: neither of these will get triggered if used by admins
    - If in chat, toggles that chat's status.
 """
 
-REPORT_HANDLER = CommandHandler("report", report, filters=Filters.group)
-SETTING_HANDLER = CommandHandler("reports", report_setting, pass_args=True)
-ADMIN_REPORT_HANDLER = RegexHandler("(?i)@admin(s)?", report)
+REPORT_HANDLER = CustomCommandHandler("report", report, filters=Filters.group)
+SETTING_HANDLER = CustomCommandHandler("reports", report_setting, pass_args=True)
+ADMIN_REPORT_HANDLER = MessageHandler(Filters.regex("(?i)@admin(s)?"), report)
 
 dispatcher.add_handler(REPORT_HANDLER, REPORT_GROUP)
 dispatcher.add_handler(ADMIN_REPORT_HANDLER, REPORT_GROUP)

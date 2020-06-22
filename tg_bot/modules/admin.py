@@ -1,5 +1,5 @@
 import html
-from typing import Optional, List
+from typing import List
 
 from telegram import Message, Chat, Update, Bot, User
 from telegram import ParseMode
@@ -20,11 +20,12 @@ from tg_bot.modules.log_channel import loggable
 @can_promote
 @user_admin
 @loggable
-def promote(bot: Bot, update: Update, args: List[str]) -> str:
+def promote(update, context):
     chat_id = update.effective_chat.id
     message = update.effective_message  # type: Optional[Message]
     chat = update.effective_chat  # type: Optional[Chat]
     user = update.effective_user  # type: Optional[User]
+    args = context.args
 
     user_id = extract_user(message, args)
     if not user_id:
@@ -36,14 +37,14 @@ def promote(bot: Bot, update: Update, args: List[str]) -> str:
         message.reply_text("How am I meant to promote someone that's already an admin?")
         return ""
 
-    if user_id == bot.id:
+    if user_id == context.bot.id:
         message.reply_text("I can't promote myself! Get an admin to do it for me.")
         return ""
 
     # set same perms as bot - bot can't assign higher perms than itself!
-    bot_member = chat.get_member(bot.id)
+    bot_member = chat.get_member(context.bot.id)
 
-    bot.promoteChatMember(chat_id, user_id,
+    context.bot.promoteChatMember(chat_id, user_id,
                           can_change_info=bot_member.can_change_info,
                           can_post_messages=bot_member.can_post_messages,
                           can_edit_messages=bot_member.can_edit_messages,
@@ -67,7 +68,7 @@ def promote(bot: Bot, update: Update, args: List[str]) -> str:
 @can_promote
 @user_admin
 @loggable
-def demote(bot: Bot, update: Update, args: List[str]) -> str:
+def demote(update, context):
     chat = update.effective_chat  # type: Optional[Chat]
     message = update.effective_message  # type: Optional[Message]
     user = update.effective_user  # type: Optional[User]
@@ -86,12 +87,12 @@ def demote(bot: Bot, update: Update, args: List[str]) -> str:
         message.reply_text("Can't demote what wasn't promoted!")
         return ""
 
-    if user_id == bot.id:
+    if user_id == context.bot.id:
         message.reply_text("I can't demote myself! Get an admin to do it for me.")
         return ""
 
     try:
-        bot.promoteChatMember(int(chat.id), int(user_id),
+        context.bot.promoteChatMember(int(chat.id), int(user_id),
                               can_change_info=False,
                               can_post_messages=False,
                               can_edit_messages=False,
@@ -119,9 +120,10 @@ def demote(bot: Bot, update: Update, args: List[str]) -> str:
 @can_pin
 @user_admin
 @loggable
-def pin(bot: Bot, update: Update, args: List[str]) -> str:
+def pin(update, context) -> str:
     user = update.effective_user  # type: Optional[User]
     chat = update.effective_chat  # type: Optional[Chat]
+    args = context.args
 
     is_group = chat.type != "private" and chat.type != "channel"
 
@@ -133,7 +135,7 @@ def pin(bot: Bot, update: Update, args: List[str]) -> str:
 
     if prev_message and is_group:
         try:
-            bot.pinChatMessage(chat.id, prev_message.message_id, disable_notification=is_silent)
+            context.bot.pinChatMessage(chat.id, prev_message.message_id, disable_notification=is_silent)
         except BadRequest as excp:
             if excp.message == "Chat_not_modified":
                 pass
@@ -151,12 +153,12 @@ def pin(bot: Bot, update: Update, args: List[str]) -> str:
 @can_pin
 @user_admin
 @loggable
-def unpin(bot: Bot, update: Update) -> str:
+def unpin(update, context) -> str:
     chat = update.effective_chat
     user = update.effective_user  # type: Optional[User]
 
     try:
-        bot.unpinChatMessage(chat.id)
+        context.bot.unpinChatMessage(chat.id)
     except BadRequest as excp:
         if excp.message == "Chat_not_modified":
             pass
@@ -172,14 +174,14 @@ def unpin(bot: Bot, update: Update) -> str:
 @run_async
 @bot_admin
 @user_admin
-def invite(bot: Bot, update: Update):
+def invite(update, context):
     chat = update.effective_chat  # type: Optional[Chat]
     if chat.username:
         update.effective_message.reply_text(chat.username)
     elif chat.type == chat.SUPERGROUP or chat.type == chat.CHANNEL:
-        bot_member = chat.get_member(bot.id)
+        bot_member = chat.get_member(context.bot.id)
         if bot_member.can_invite_users:
-            invitelink = bot.exportChatInviteLink(chat.id)
+            invitelink = context.bot.exportChatInviteLink(chat.id)
             update.effective_message.reply_text(invitelink)
         else:
             update.effective_message.reply_text("I don't have access to the invite link, try changing my permissions!")
@@ -188,7 +190,7 @@ def invite(bot: Bot, update: Update):
 
 
 @run_async
-def adminlist(bot: Bot, update: Update):
+def adminlist(update, context):
     administrators = update.effective_chat.get_administrators()
     text = "Admins in *{}*:".format(update.effective_chat.title or "this chat")
     for admin in administrators:
@@ -203,7 +205,7 @@ def adminlist(bot: Bot, update: Update):
 
 def __chat_settings__(chat_id, user_id):
     return "You are *admin*: `{}`".format(
-        dispatcher.bot.get_chat_member(chat_id, user_id).status in ("administrator", "creator"))
+        dispatcher.context.bot.get_chat_member(chat_id, user_id).status in ("administrator", "creator"))
 
 
 __help__ = """

@@ -1,18 +1,13 @@
-import html
-import json
-import random
+import html, random, json, requests
 from datetime import datetime
-from typing import Optional, List
+from typing import List
 
-import requests
-from telegram import Message, Chat, Update, Bot, MessageEntity
-from telegram import ParseMode
+from telegram import Chat, Update, Bot, MessageEntity, ParseMode
 from telegram.ext import CommandHandler, run_async, Filters
 from telegram.utils.helpers import escape_markdown, mention_html
 
 from tg_bot import dispatcher, OWNER_ID, SUDO_USERS, SUPPORT_USERS, WHITELIST_USERS, BAN_STICKER
-from tg_bot.__main__ import GDPR
-from tg_bot.__main__ import STATS, USER_INFO
+from tg_bot.__main__ import GDPR, STATS, USER_INFO
 from tg_bot.modules.disable import DisableAbleCommandHandler
 from tg_bot.modules.helper_funcs.extraction import extract_user
 from tg_bot.modules.helper_funcs.filters import CustomFilters
@@ -135,13 +130,14 @@ GMAPS_TIME = "https://maps.googleapis.com/maps/api/timezone/json"
 
 
 @run_async
-def runs(bot: Bot, update: Update):
+def runs(update, context):
     update.effective_message.reply_text(random.choice(RUN_STRINGS))
 
 
 @run_async
-def slap(bot: Bot, update: Update, args: List[str]):
+def slap(update, context):
     msg = update.effective_message  # type: Optional[Message]
+    args = context.args
 
     # reply to correct message
     reply_text = msg.reply_to_message.reply_text if msg.reply_to_message else msg.reply_text
@@ -154,7 +150,7 @@ def slap(bot: Bot, update: Update, args: List[str]):
 
     user_id = extract_user(update.effective_message, args)
     if user_id:
-        slapped_user = bot.get_chat(user_id)
+        slapped_user = context.bot.get_chat(user_id)
         user1 = curr_user
         if slapped_user.username:
             user2 = "@" + escape_markdown(slapped_user.username)
@@ -164,7 +160,7 @@ def slap(bot: Bot, update: Update, args: List[str]):
 
     # if no target found, bot targets the sender
     else:
-        user1 = "[{}](tg://user?id={})".format(bot.first_name, bot.id)
+        user1 = "[{}](tg://user?id={})".format(context.bot.first_name, context.bot.id)
         user2 = curr_user
 
     temp = random.choice(SLAP_TEMPLATES)
@@ -178,7 +174,7 @@ def slap(bot: Bot, update: Update, args: List[str]):
 
 
 @run_async
-def get_bot_ip(bot: Bot, update: Update):
+def get_bot_ip(update, context):
     """ Sends the bot's IP address, so as to be able to ssh in if necessary.
         OWNER ONLY.
     """
@@ -187,7 +183,8 @@ def get_bot_ip(bot: Bot, update: Update):
 
 
 @run_async
-def get_id(bot: Bot, update: Update, args: List[str]):
+def get_id(update, context):
+    args = context.args
     user_id = extract_user(update.effective_message, args)
     if user_id:
         if update.effective_message.reply_to_message and update.effective_message.reply_to_message.forward_from:
@@ -201,7 +198,7 @@ def get_id(bot: Bot, update: Update, args: List[str]):
                     user1.id),
                 parse_mode=ParseMode.MARKDOWN)
         else:
-            user = bot.get_chat(user_id)
+            user = context.bot.get_chat(user_id)
             update.effective_message.reply_text("{}'s id is `{}`.".format(escape_markdown(user.first_name), user.id),
                                                 parse_mode=ParseMode.MARKDOWN)
     else:
@@ -216,12 +213,13 @@ def get_id(bot: Bot, update: Update, args: List[str]):
 
 
 @run_async
-def info(bot: Bot, update: Update, args: List[str]):
+def info(update, context):
     msg = update.effective_message  # type: Optional[Message]
+    args = context.args
     user_id = extract_user(update.effective_message, args)
 
     if user_id:
-        user = bot.get_chat(user_id)
+        user = context.bot.get_chat(user_id)
 
     elif not msg.reply_to_message and not args:
         user = msg.from_user
@@ -235,7 +233,7 @@ def info(bot: Bot, update: Update, args: List[str]):
     else:
         return
 
-    text = "<b>User info</b>:" \
+    text = "<b>USER INFO</b>:" \
            "\nID: <code>{}</code>" \
            "\nFirst Name: {}".format(user.id, html.escape(user.first_name))
 
@@ -245,7 +243,7 @@ def info(bot: Bot, update: Update, args: List[str]):
     if user.username:
         text += "\nUsername: @{}".format(html.escape(user.username))
 
-    text += "\nPermanent user link: {}".format(mention_html(user.id, "link"))
+    text += "\nUser Link: {}".format(mention_html(user.id, user.first_name))
 
     if user.id == OWNER_ID:
         text += "\n\nThis person is my owner - I would never do anything against them!"
@@ -271,11 +269,12 @@ def info(bot: Bot, update: Update, args: List[str]):
 
 
 @run_async
-def get_time(bot: Bot, update: Update, args: List[str]):
+def get_time(update, context):
+    args = context.args
     location = " ".join(args)
-    if location.lower() == bot.first_name.lower():
+    if location.lower() == context.bot.first_name.lower():
         update.effective_message.reply_text("Its always banhammer time for me!")
-        bot.send_sticker(update.effective_chat.id, BAN_STICKER)
+        context.bot.send_sticker(update.effective_chat.id, BAN_STICKER)
         return
 
     res = requests.get(GMAPS_LOC, params=dict(address=location))
@@ -313,7 +312,7 @@ def get_time(bot: Bot, update: Update, args: List[str]):
 
 
 @run_async
-def echo(bot: Bot, update: Update):
+def echo(update, context):
     args = update.effective_message.text.split(None, 1)
     message = update.effective_message
     if message.reply_to_message:
@@ -324,7 +323,7 @@ def echo(bot: Bot, update: Update):
 
 
 @run_async
-def gdpr(bot: Bot, update: Update):
+def gdpr(update, context):
     update.effective_message.reply_text("Deleting identifiable data...")
     for mod in GDPR:
         mod.__gdpr__(update.effective_user.id)
@@ -365,7 +364,7 @@ Keep in mind that your message <b>MUST</b> contain some text other than just a b
 
 
 @run_async
-def markdown_help(bot: Bot, update: Update):
+def markdown_help(update, context):
     update.effective_message.reply_text(MARKDOWN_HELP, parse_mode=ParseMode.HTML)
     update.effective_message.reply_text("Try forwarding the following message to me, and you'll see!")
     update.effective_message.reply_text("/save test This is a markdown test. _italics_, *bold*, `code`, "
@@ -374,7 +373,7 @@ def markdown_help(bot: Bot, update: Update):
 
 
 @run_async
-def stats(bot: Bot, update: Update):
+def stats(update, context):
     update.effective_message.reply_text("Current stats:\n" + "\n".join([mod.__stats__() for mod in STATS]))
 
 
@@ -400,7 +399,7 @@ RUNS_HANDLER = DisableAbleCommandHandler("runs", runs)
 SLAP_HANDLER = DisableAbleCommandHandler("slap", slap, pass_args=True)
 INFO_HANDLER = DisableAbleCommandHandler("info", info, pass_args=True)
 
-ECHO_HANDLER = CommandHandler("echo", echo, filters=Filters.user(OWNER_ID))
+ECHO_HANDLER = CommandHandler("echo", echo, filters=CustomFilters.sudo_filter)
 MD_HELP_HANDLER = CommandHandler("markdownhelp", markdown_help, filters=Filters.private)
 
 STATS_HANDLER = CommandHandler("stats", stats, filters=CustomFilters.sudo_filter)

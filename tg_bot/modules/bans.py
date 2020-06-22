@@ -1,12 +1,12 @@
 import html
-from typing import Optional, List
+from typing import List
 
 from telegram import Message, Chat, Update, Bot, User
 from telegram.error import BadRequest
 from telegram.ext import run_async, CommandHandler, Filters
 from telegram.utils.helpers import mention_html
 
-from tg_bot import dispatcher, BAN_STICKER, LOGGER
+from tg_bot import dispatcher, BAN_STICKER, LOGGER, OWNER_ID
 from tg_bot.modules.disable import DisableAbleCommandHandler
 from tg_bot.modules.helper_funcs.chat_status import bot_admin, user_admin, is_user_ban_protected, can_restrict, \
     is_user_admin, is_user_in_chat
@@ -20,10 +20,11 @@ from tg_bot.modules.log_channel import loggable
 @can_restrict
 @user_admin
 @loggable
-def ban(bot: Bot, update: Update, args: List[str]) -> str:
-    chat = update.effective_chat  # type: Optional[Chat]
-    user = update.effective_user  # type: Optional[User]
-    message = update.effective_message  # type: Optional[Message]
+def ban(update, context):
+    chat = update.effective_chat  
+    user = update.effective_user  
+    message = update.effective_message
+    args = context.args
 
     user_id, reason = extract_user_and_text(message, args)
 
@@ -40,11 +41,14 @@ def ban(bot: Bot, update: Update, args: List[str]) -> str:
         else:
             raise
 
+    if user_id == 777000:
+        message.reply_text("I'm not going to ban telegram.")
+        return ""
     if is_user_ban_protected(chat, user_id, member):
         message.reply_text("I really wish I could ban admins...")
         return ""
 
-    if user_id == bot.id:
+    if user_id == context.bot.id:
         message.reply_text("I'm not gonna BAN myself, are you crazy?")
         return ""
 
@@ -60,7 +64,7 @@ def ban(bot: Bot, update: Update, args: List[str]) -> str:
 
     try:
         chat.kick_member(user_id)
-        bot.send_sticker(chat.id, BAN_STICKER)  # banhammer marie sticker
+        context.bot.send_sticker(chat.id, BAN_STICKER)  # banhammer marie sticker
         message.reply_text("Banned!")
         return log
 
@@ -83,15 +87,19 @@ def ban(bot: Bot, update: Update, args: List[str]) -> str:
 @can_restrict
 @user_admin
 @loggable
-def temp_ban(bot: Bot, update: Update, args: List[str]) -> str:
-    chat = update.effective_chat  # type: Optional[Chat]
-    user = update.effective_user  # type: Optional[User]
-    message = update.effective_message  # type: Optional[Message]
+def temp_ban(update, context):
+    chat = update.effective_chat  
+    user = update.effective_user  
+    message = update.effective_message
+    args = context.args  
 
     user_id, reason = extract_user_and_text(message, args)
 
     if not user_id:
         message.reply_text("You don't seem to be referring to a user.")
+        return ""
+    if user_id == 777000:
+        message.reply_text("I'm not going to ban telegram.")
         return ""
 
     try:
@@ -107,7 +115,7 @@ def temp_ban(bot: Bot, update: Update, args: List[str]) -> str:
         message.reply_text("I really wish I could ban admins...")
         return ""
 
-    if user_id == bot.id:
+    if user_id == context.bot.id:
         message.reply_text("I'm not gonna BAN myself, are you crazy?")
         return ""
 
@@ -142,7 +150,7 @@ def temp_ban(bot: Bot, update: Update, args: List[str]) -> str:
 
     try:
         chat.kick_member(user_id, until_date=bantime)
-        bot.send_sticker(chat.id, BAN_STICKER)  # banhammer marie sticker
+        context.bot.send_sticker(chat.id, BAN_STICKER)  # banhammer marie sticker
         message.reply_text("Banned! User will be banned for {}.".format(time_val))
         return log
 
@@ -165,14 +173,18 @@ def temp_ban(bot: Bot, update: Update, args: List[str]) -> str:
 @can_restrict
 @user_admin
 @loggable
-def kick(bot: Bot, update: Update, args: List[str]) -> str:
-    chat = update.effective_chat  # type: Optional[Chat]
-    user = update.effective_user  # type: Optional[User]
-    message = update.effective_message  # type: Optional[Message]
+def kick(update, context):
+    chat = update.effective_chat  
+    user = update.effective_user  
+    message = update.effective_message 
+    args = context.args 
 
     user_id, reason = extract_user_and_text(message, args)
 
     if not user_id:
+        return ""
+    if user_id == 777000:
+        message.reply_text("I'm not going to kick telegram.")
         return ""
 
     try:
@@ -188,13 +200,13 @@ def kick(bot: Bot, update: Update, args: List[str]) -> str:
         message.reply_text("I really wish I could kick admins...")
         return ""
 
-    if user_id == bot.id:
+    if user_id == context.bot.id:
         message.reply_text("Yeahhh I'm not gonna do that")
         return ""
 
     res = chat.unban_member(user_id)  # unban on current user = kick
     if res:
-        bot.send_sticker(chat.id, BAN_STICKER)  # banhammer marie sticker
+        context.bot.send_sticker(chat.id, BAN_STICKER)  # banhammer marie sticker
         message.reply_text("Kicked!")
         log = "<b>{}:</b>" \
               "\n#KICKED" \
@@ -217,15 +229,18 @@ def kick(bot: Bot, update: Update, args: List[str]) -> str:
 @run_async
 @bot_admin
 @can_restrict
-def kickme(bot: Bot, update: Update):
+def kickme(update, context):
     user_id = update.effective_message.from_user.id
+    if user_id == OWNER_ID:
+        update.effective_message.reply_text("I can't kick My Master")
+        return
     if is_user_admin(update.effective_chat, user_id):
         update.effective_message.reply_text("I wish I could... but you're an admin.")
         return
 
     res = update.effective_chat.unban_member(user_id)  # unban on current user = kick
     if res:
-        update.effective_message.reply_text("No problem.")
+        update.effective_message.reply_text("No problem no need of noobs like uh.")
     else:
         update.effective_message.reply_text("Huh? I can't :/")
 
@@ -235,10 +250,11 @@ def kickme(bot: Bot, update: Update):
 @can_restrict
 @user_admin
 @loggable
-def unban(bot: Bot, update: Update, args: List[str]) -> str:
-    message = update.effective_message  # type: Optional[Message]
-    user = update.effective_user  # type: Optional[User]
-    chat = update.effective_chat  # type: Optional[Chat]
+def unban(update, context):
+    message = update.effective_message  
+    user = update.effective_user  
+    chat = update.effective_chat  
+    args = context.args
 
     user_id, reason = extract_user_and_text(message, args)
 
@@ -254,7 +270,7 @@ def unban(bot: Bot, update: Update, args: List[str]) -> str:
         else:
             raise
 
-    if user_id == bot.id:
+    if user_id == context.bot.id:
         message.reply_text("How would I unban myself if I wasn't here...?")
         return ""
 

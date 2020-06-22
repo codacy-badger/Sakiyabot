@@ -1,5 +1,4 @@
-import html
-import re
+import html, re
 from typing import Optional, List
 
 import telegram
@@ -19,15 +18,19 @@ from tg_bot.modules.helper_funcs.misc import split_message
 from tg_bot.modules.helper_funcs.string_handling import split_quotes
 from tg_bot.modules.log_channel import loggable
 from tg_bot.modules.sql import warns_sql as sql
+from tg_bot.modules.helper_funcs.handlers import CustomCommandHandler
 
 WARN_HANDLER_GROUP = 9
-CURRENT_WARNING_FILTER_STRING = "<b>Current warning filters in this chat:</b>\n"
+CURRENT_WARNING_FILTER_STRING = "*Current warning filters in this chat:*\n"
 
 
 # Not async
 def warn(user: User, chat: Chat, reason: str, message: Message, warner: User = None) -> str:
     if is_user_admin(chat, user.id):
         message.reply_text("Damn admins, can't even be warned!")
+        return ""
+    if user.id == 777000:
+        message.reply_text("Never i can't warn tg.")
         return ""
 
     if warner:
@@ -96,7 +99,7 @@ def warn(user: User, chat: Chat, reason: str, message: Message, warner: User = N
 @user_admin_no_reply
 @bot_admin
 @loggable
-def button(bot: Bot, update: Update) -> str:
+def button(update, context) -> str:
     query = update.callback_query  # type: Optional[CallbackQuery]
     user = update.effective_user  # type: Optional[User]
     match = re.match(r"rm_warn\((.+?)\)", query.data)
@@ -128,11 +131,11 @@ def button(bot: Bot, update: Update) -> str:
 @user_admin
 @can_restrict
 @loggable
-def warn_user(bot: Bot, update: Update, args: List[str]) -> str:
+def warn_user(update, context):
     message = update.effective_message  # type: Optional[Message]
     chat = update.effective_chat  # type: Optional[Chat]
     warner = update.effective_user  # type: Optional[User]
-
+    args = context.args
     user_id, reason = extract_user_and_text(message, args)
 
     if user_id:
@@ -149,10 +152,11 @@ def warn_user(bot: Bot, update: Update, args: List[str]) -> str:
 @user_admin
 @bot_admin
 @loggable
-def reset_warns(bot: Bot, update: Update, args: List[str]) -> str:
+def reset_warns(update, context):
     message = update.effective_message  # type: Optional[Message]
     chat = update.effective_chat  # type: Optional[Chat]
     user = update.effective_user  # type: Optional[User]
+    args = context.args
 
     user_id = extract_user(message, args)
 
@@ -173,20 +177,21 @@ def reset_warns(bot: Bot, update: Update, args: List[str]) -> str:
 
 
 @run_async
-def warns(bot: Bot, update: Update, args: List[str]):
+def warns(update, context):
     message = update.effective_message  # type: Optional[Message]
     chat = update.effective_chat  # type: Optional[Chat]
+    args = context.args
     user_id = extract_user(message, args) or update.effective_user.id
     result = sql.get_warns(user_id, chat.id)
 
     if result and result[0] != 0:
         num_warns, reasons = result
-        limit, soft_warn = sql.get_warn_setting(chat.id)
+        limit = sql.get_warn_setting(chat.id)
 
         if reasons:
             text = "This user has {}/{} warnings, for the following reasons:".format(num_warns, limit)
             for reason in reasons:
-                text += "\n - {}".format(reason)
+                text += "\n • {}".format(reason)
 
             msgs = split_message(text)
             for msg in msgs:
@@ -200,7 +205,7 @@ def warns(bot: Bot, update: Update, args: List[str]):
 
 # Dispatcher handler stop - do not async
 @user_admin
-def add_warn_filter(bot: Bot, update: Update):
+def add_warn_filter(update, context):
     chat = update.effective_chat  # type: Optional[Chat]
     msg = update.effective_message  # type: Optional[Message]
 
@@ -226,12 +231,13 @@ def add_warn_filter(bot: Bot, update: Update):
 
     sql.add_warn_filter(chat.id, keyword, content)
 
-    update.effective_message.reply_text("Warn handler added for '{}'!".format(keyword))
+    update.effective_message.reply_text("Warn handler added for '`{}`'!".format(keyword),
+                                        parse_mode=ParseMode.MARKDOWN)
     raise DispatcherHandlerStop
 
 
 @user_admin
-def remove_warn_filter(bot: Bot, update: Update):
+def remove_warn_filter(update, context):
     chat = update.effective_chat  # type: Optional[Chat]
     msg = update.effective_message  # type: Optional[Message]
 
@@ -263,7 +269,7 @@ def remove_warn_filter(bot: Bot, update: Update):
 
 
 @run_async
-def list_warn_filters(bot: Bot, update: Update):
+def list_warn_filters(update, context):
     chat = update.effective_chat  # type: Optional[Chat]
     all_handlers = sql.get_chat_warn_triggers(chat.id)
 
@@ -273,20 +279,20 @@ def list_warn_filters(bot: Bot, update: Update):
 
     filter_list = CURRENT_WARNING_FILTER_STRING
     for keyword in all_handlers:
-        entry = " - {}\n".format(html.escape(keyword))
+        entry = " • `{}`\n".format(html.escape(keyword))
         if len(entry) + len(filter_list) > telegram.MAX_MESSAGE_LENGTH:
-            update.effective_message.reply_text(filter_list, parse_mode=ParseMode.HTML)
+            update.effective_message.reply_text(filter_list, parse_mode=telegram.ParseMode.MARKDOWN)
             filter_list = entry
         else:
             filter_list += entry
 
     if not filter_list == CURRENT_WARNING_FILTER_STRING:
-        update.effective_message.reply_text(filter_list, parse_mode=ParseMode.HTML)
+        update.effective_message.reply_text(filter_list, parse_mode=telegram.ParseMode.MARKDOWN)
 
 
 @run_async
 @loggable
-def reply_filter(bot: Bot, update: Update) -> str:
+def reply_filter(update, context) -> str:
     chat = update.effective_chat  # type: Optional[Chat]
     message = update.effective_message  # type: Optional[Message]
 
@@ -307,10 +313,11 @@ def reply_filter(bot: Bot, update: Update) -> str:
 @run_async
 @user_admin
 @loggable
-def set_warn_limit(bot: Bot, update: Update, args: List[str]) -> str:
+def set_warn_limit(update, context) -> str:
     chat = update.effective_chat  # type: Optional[Chat]
     user = update.effective_user  # type: Optional[User]
     msg = update.effective_message  # type: Optional[Message]
+    args = context.args
 
     if args:
         if args[0].isdigit():
@@ -335,10 +342,11 @@ def set_warn_limit(bot: Bot, update: Update, args: List[str]) -> str:
 
 @run_async
 @user_admin
-def set_warn_strength(bot: Bot, update: Update, args: List[str]):
+def set_warn_strength(update, context):
     chat = update.effective_chat  # type: Optional[Chat]
     user = update.effective_user  # type: Optional[User]
     msg = update.effective_message  # type: Optional[Message]
+    args = context.args
 
     if args:
         if args[0].lower() in ("on", "yes"):
@@ -410,16 +418,16 @@ be a sentence, encompass it with quotes, as such: `/addwarn "very angry" This is
 
 __mod_name__ = "Warnings"
 
-WARN_HANDLER = CommandHandler("warn", warn_user, pass_args=True, filters=Filters.group)
-RESET_WARN_HANDLER = CommandHandler(["resetwarn", "resetwarns"], reset_warns, pass_args=True, filters=Filters.group)
+WARN_HANDLER = CustomCommandHandler("warn", warn_user, pass_args=True, filters=Filters.group)
+RESET_WARN_HANDLER = CustomCommandHandler(["resetwarn", "resetwarns"], reset_warns, pass_args=True, filters=Filters.group)
 CALLBACK_QUERY_HANDLER = CallbackQueryHandler(button, pattern=r"rm_warn")
 MYWARNS_HANDLER = DisableAbleCommandHandler("warns", warns, pass_args=True, filters=Filters.group)
-ADD_WARN_HANDLER = CommandHandler("addwarn", add_warn_filter, filters=Filters.group)
-RM_WARN_HANDLER = CommandHandler(["nowarn", "stopwarn"], remove_warn_filter, filters=Filters.group)
+ADD_WARN_HANDLER = CustomCommandHandler("addwarn", add_warn_filter, filters=Filters.group)
+RM_WARN_HANDLER = CustomCommandHandler(["nowarn", "stopwarn"], remove_warn_filter, filters=Filters.group)
 LIST_WARN_HANDLER = DisableAbleCommandHandler(["warnlist", "warnfilters"], list_warn_filters, filters=Filters.group, admin_ok=True)
 WARN_FILTER_HANDLER = MessageHandler(CustomFilters.has_text & Filters.group, reply_filter)
-WARN_LIMIT_HANDLER = CommandHandler("warnlimit", set_warn_limit, pass_args=True, filters=Filters.group)
-WARN_STRENGTH_HANDLER = CommandHandler("strongwarn", set_warn_strength, pass_args=True, filters=Filters.group)
+WARN_LIMIT_HANDLER = CustomCommandHandler("warnlimit", set_warn_limit, pass_args=True, filters=Filters.group)
+WARN_STRENGTH_HANDLER = CustomCommandHandler("strongwarn", set_warn_strength, pass_args=True, filters=Filters.group)
 
 dispatcher.add_handler(WARN_HANDLER)
 dispatcher.add_handler(CALLBACK_QUERY_HANDLER)

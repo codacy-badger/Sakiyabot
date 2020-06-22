@@ -3,9 +3,9 @@ from io import BytesIO
 from typing import Optional, List
 
 from telegram import MAX_MESSAGE_LENGTH, ParseMode, InlineKeyboardMarkup
-from telegram import Message, Update, Bot
+from telegram import Message, Update, Bot, Chat
 from telegram.error import BadRequest
-from telegram.ext import CommandHandler, RegexHandler
+from telegram.ext import CommandHandler, MessageHandler, Filters
 from telegram.ext.dispatcher import run_async
 from telegram.utils.helpers import escape_markdown
 
@@ -15,6 +15,7 @@ from tg_bot.modules.disable import DisableAbleCommandHandler
 from tg_bot.modules.helper_funcs.chat_status import user_admin
 from tg_bot.modules.helper_funcs.misc import build_keyboard, revert_buttons
 from tg_bot.modules.helper_funcs.msg_types import get_note_type
+from tg_bot.modules.helper_funcs.handlers import CustomCommandHandler
 
 FILE_MATCHER = re.compile(r"^###file_id(!photo)?###:(.*?)(?:\s|$)")
 
@@ -32,7 +33,9 @@ ENUM_FUNC_MAP = {
 
 # Do not async
 def get(bot, update, notename, show_none=True, no_format=False):
+    chat = update.effective_chat
     chat_id = update.effective_chat.id
+    user = update.effective_user
     note = sql.get_note(chat_id, notename)
     message = update.effective_message  # type: Optional[Message]
 
@@ -101,7 +104,7 @@ def get(bot, update, notename, show_none=True, no_format=False):
                     sql.rm_note(chat_id, notename)
                 else:
                     message.reply_text("This note could not be sent, as it is incorrectly formatted. Ask in "
-                                       "@MarieSupport if you can't figure out why!")
+                                       "owner if you can't figure out why!")
                     LOGGER.exception("Could not parse message #%s in chat %s", notename, str(chat_id))
                     LOGGER.warning("Message was: %s", str(note.value))
         return
@@ -110,27 +113,28 @@ def get(bot, update, notename, show_none=True, no_format=False):
 
 
 @run_async
-def cmd_get(bot: Bot, update: Update, args: List[str]):
+def cmd_get(update, context):
+    args = context.args
     if len(args) >= 2 and args[1].lower() == "noformat":
-        get(bot, update, args[0], show_none=True, no_format=True)
+        get(context.bot, update, args[0], show_none=True, no_format=True)
     elif len(args) >= 1:
-        get(bot, update, args[0], show_none=True)
+        get(context.bot, update, args[0], show_none=True)
     else:
         update.effective_message.reply_text("Get rekt")
 
 
 @run_async
-def hash_get(bot: Bot, update: Update):
+def hash_get(update, context):
     message = update.effective_message.text
     fst_word = message.split()[0]
     no_hash = fst_word[1:]
-    get(bot, update, no_hash, show_none=False)
+    get(context.bot, update, no_hash, show_none=False)
 
 
 @run_async
 @user_admin
-def save(bot: Bot, update: Update):
-    chat_id = update.effective_chat.id
+def save(update, context):
+    chat = update.effective_chat.id
     msg = update.effective_message  # type: Optional[Message]
 
     note_name, text, data_type, content, buttons = get_note_type(msg)
@@ -142,10 +146,11 @@ def save(bot: Bot, update: Update):
     if len(text.strip()) == 0:
         text = note_name
         
-    sql.add_note_to_db(chat_id, note_name, text, data_type, buttons=buttons, file=content)
+    sql.add_note_to_db(chat, note_name, text, data_type, buttons=buttons, file=content)
 
     msg.reply_text(
-        "Yas! Added {note_name}.\nGet it with /get {note_name}, or #{note_name}".format(note_name=note_name))
+        "Yas! Added *{note_name}*.\nGet it with `/get {note_name}`, or `#{note_name}`".format(note_name=note_name),
+        parse_mode=ParseMode.MARKDOWN)
 
     if msg.reply_to_message and msg.reply_to_message.from_user.is_bot:
         if text:
@@ -163,8 +168,9 @@ def save(bot: Bot, update: Update):
 
 @run_async
 @user_admin
-def clear(bot: Bot, update: Update, args: List[str]):
+def clear(update, context):
     chat_id = update.effective_chat.id
+    args = context.args
     if len(args) >= 1:
         notename = args[0]
 
@@ -175,19 +181,19 @@ def clear(bot: Bot, update: Update, args: List[str]):
 
 
 @run_async
-def list_notes(bot: Bot, update: Update):
+def list_notes(update, context):
     chat_id = update.effective_chat.id
     note_list = sql.get_all_chat_notes(chat_id)
 
-    msg = "*Notes in chat:*\n"
+    msg = "*Notes in this chat:*\n"
     for note in note_list:
-        note_name = escape_markdown(" - {}\n".format(note.name))
+        note_name = " • `#{}`\n".format(note.name)
         if len(msg) + len(note_name) > MAX_MESSAGE_LENGTH:
             update.effective_message.reply_text(msg, parse_mode=ParseMode.MARKDOWN)
             msg = ""
         msg += note_name
 
-    if msg == "*Notes in chat:*\n":
+    if msg == "*Notes in this chat:*\n":
         update.effective_message.reply_text("No notes in this chat!")
 
     elif len(msg) != 0:
@@ -247,11 +253,11 @@ A button can be added to a note by using standard markdown link syntax - the lin
 
 __mod_name__ = "Notes"
 
-GET_HANDLER = CommandHandler("get", cmd_get, pass_args=True)
-HASH_GET_HANDLER = RegexHandler(r"^#[^\s]+", hash_get)
+GET_HANDLER = CustomCommandHandler("get", cmd_get, pass_args=True)
+HASH_GET_HANDLER = MessageHandler(Filters.regex(r"^#[^\s]+"), hash_get)
 
-SAVE_HANDLER = CommandHandler("save", save)
-DELETE_HANDLER = CommandHandler("clear", clear, pass_args=True)
+SAVE_HANDLER = CustomCommandHandler("save", save)
+DELETE_HANDLER = CustomCommandHandler("clear", clear, pass_args=True)
 
 LIST_HANDLER = DisableAbleCommandHandler(["notes", "saved"], list_notes, admin_ok=True)
 

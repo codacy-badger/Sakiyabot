@@ -10,16 +10,17 @@ import tg_bot.modules.sql.rules_sql as sql
 from tg_bot import dispatcher
 from tg_bot.modules.helper_funcs.chat_status import user_admin
 from tg_bot.modules.helper_funcs.string_handling import markdown_parser
-
+from tg_bot.modules.helper_funcs.handlers import CustomCommandHandler
 
 @run_async
-def get_rules(bot: Bot, update: Update):
+def get_rules(update, context):
     chat_id = update.effective_chat.id
     send_rules(update, chat_id)
 
 
 # Do not async - not from a handler
-def send_rules(update, chat_id, from_pm=False):
+def send_rules(update, context, from_pm=False):
+    chat_id = update.effective_chat.id
     bot = dispatcher.bot
     user = update.effective_user  # type: Optional[User]
     try:
@@ -53,7 +54,7 @@ def send_rules(update, chat_id, from_pm=False):
 
 @run_async
 @user_admin
-def set_rules(bot: Bot, update: Update):
+def set_rules(update, context):
     chat_id = update.effective_chat.id
     msg = update.effective_message  # type: Optional[Message]
     raw_text = msg.text
@@ -69,7 +70,7 @@ def set_rules(bot: Bot, update: Update):
 
 @run_async
 @user_admin
-def clear_rules(bot: Bot, update: Update):
+def clear_rules(update, context):
     chat_id = update.effective_chat.id
     sql.set_rules(chat_id, "")
     update.effective_message.reply_text("Successfully cleared rules!")
@@ -103,9 +104,9 @@ __help__ = """
 
 __mod_name__ = "Rules"
 
-GET_RULES_HANDLER = CommandHandler("rules", get_rules, filters=Filters.group)
-SET_RULES_HANDLER = CommandHandler("setrules", set_rules, filters=Filters.group)
-RESET_RULES_HANDLER = CommandHandler("clearrules", clear_rules, filters=Filters.group)
+GET_RULES_HANDLER = CustomCommandHandler("rules", get_rules, filters=Filters.group)
+SET_RULES_HANDLER = CustomCommandHandler("setrules", set_rules, filters=Filters.group)
+RESET_RULES_HANDLER = CustomCommandHandler("clearrules", clear_rules, filters=Filters.group)
 
 dispatcher.add_handler(GET_RULES_HANDLER)
 dispatcher.add_handler(SET_RULES_HANDLER)

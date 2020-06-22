@@ -1,8 +1,7 @@
 import html
 from typing import Optional, List
 
-from telegram import Message, Chat, Update, Bot, User
-from telegram import ParseMode, InlineKeyboardMarkup
+from telegram import Chat, Update, Bot, User, ParseMode, InlineKeyboardMarkup
 from telegram.error import BadRequest
 from telegram.ext import MessageHandler, Filters, CommandHandler, run_async
 from telegram.utils.helpers import mention_markdown, mention_html, escape_markdown
@@ -15,6 +14,7 @@ from tg_bot.modules.helper_funcs.msg_types import get_welcome_type
 from tg_bot.modules.helper_funcs.string_handling import markdown_parser, \
     escape_invalid_curly_brackets
 from tg_bot.modules.log_channel import loggable
+from tg_bot.modules.helper_funcs.handlers import CustomCommandHandler
 
 VALID_WELCOME_FORMATTERS = ['first', 'last', 'fullname', 'username', 'id', 'count', 'chatname', 'mention']
 
@@ -77,7 +77,7 @@ def send(update, message, keyboard, backup_message):
 
 
 @run_async
-def new_member(bot: Bot, update: Update):
+def new_member(update, context):
     chat = update.effective_chat  # type: Optional[Chat]
 
     should_welc, cust_welcome, welc_type = sql.get_welc_pref(chat.id)
@@ -91,7 +91,7 @@ def new_member(bot: Bot, update: Update):
                 continue
 
             # Don't welcome yourself
-            elif new_mem.id == bot.id:
+            elif new_mem.id == context.bot.id:
                 continue
 
             else:
@@ -133,7 +133,7 @@ def new_member(bot: Bot, update: Update):
         prev_welc = sql.get_clean_pref(chat.id)
         if prev_welc:
             try:
-                bot.delete_message(chat.id, prev_welc)
+                context.bot.delete_message(chat.id, prev_welc)
             except BadRequest as excp:
                 pass
 
@@ -142,14 +142,14 @@ def new_member(bot: Bot, update: Update):
 
 
 @run_async
-def left_member(bot: Bot, update: Update):
+def left_member(update, context):
     chat = update.effective_chat  # type: Optional[Chat]
     should_goodbye, cust_goodbye, goodbye_type = sql.get_gdbye_pref(chat.id)
     if should_goodbye:
         left_mem = update.effective_message.left_chat_member
         if left_mem:
             # Ignore bot being kicked
-            if left_mem.id == bot.id:
+            if left_mem.id == context.bot.id:
                 return
 
             # Give the owner a special goodbye
@@ -194,8 +194,9 @@ def left_member(bot: Bot, update: Update):
 
 @run_async
 @user_admin
-def welcome(bot: Bot, update: Update, args: List[str]):
+def welcome(update, context):
     chat = update.effective_chat  # type: Optional[Chat]
+    args = context.args
     # if no args, show current replies.
     if len(args) == 0 or args[0].lower() == "noformat":
         noformat = args and args[0].lower() == "noformat"
@@ -240,8 +241,9 @@ def welcome(bot: Bot, update: Update, args: List[str]):
 
 @run_async
 @user_admin
-def goodbye(bot: Bot, update: Update, args: List[str]):
+def goodbye(update, context):
     chat = update.effective_chat  # type: Optional[Chat]
+    args = context.args
 
     if len(args) == 0 or args[0] == "noformat":
         noformat = args and args[0] == "noformat"
@@ -287,7 +289,7 @@ def goodbye(bot: Bot, update: Update, args: List[str]):
 @run_async
 @user_admin
 @loggable
-def set_welcome(bot: Bot, update: Update) -> str:
+def set_welcome(update, context) -> str:
     chat = update.effective_chat  # type: Optional[Chat]
     user = update.effective_user  # type: Optional[User]
     msg = update.effective_message  # type: Optional[Message]
@@ -311,7 +313,7 @@ def set_welcome(bot: Bot, update: Update) -> str:
 @run_async
 @user_admin
 @loggable
-def reset_welcome(bot: Bot, update: Update) -> str:
+def reset_welcome(update, context) -> str:
     chat = update.effective_chat  # type: Optional[Chat]
     user = update.effective_user  # type: Optional[User]
     sql.set_custom_welcome(chat.id, sql.DEFAULT_WELCOME, sql.Types.TEXT)
@@ -326,7 +328,7 @@ def reset_welcome(bot: Bot, update: Update) -> str:
 @run_async
 @user_admin
 @loggable
-def set_goodbye(bot: Bot, update: Update) -> str:
+def set_goodbye(update, context) -> str:
     chat = update.effective_chat  # type: Optional[Chat]
     user = update.effective_user  # type: Optional[User]
     msg = update.effective_message  # type: Optional[Message]
@@ -348,7 +350,7 @@ def set_goodbye(bot: Bot, update: Update) -> str:
 @run_async
 @user_admin
 @loggable
-def reset_goodbye(bot: Bot, update: Update) -> str:
+def reset_goodbye(update, context) -> str:
     chat = update.effective_chat  # type: Optional[Chat]
     user = update.effective_user  # type: Optional[User]
     sql.set_custom_gdbye(chat.id, sql.DEFAULT_GOODBYE, sql.Types.TEXT)
@@ -363,9 +365,10 @@ def reset_goodbye(bot: Bot, update: Update) -> str:
 @run_async
 @user_admin
 @loggable
-def clean_welcome(bot: Bot, update: Update, args: List[str]) -> str:
+def clean_welcome(update, context):
     chat = update.effective_chat  # type: Optional[Chat]
     user = update.effective_user  # type: Optional[User]
+    args = context.args
 
     if not args:
         clean_pref = sql.get_clean_pref(chat.id)
@@ -424,7 +427,7 @@ WELC_HELP_TXT = "Your group's welcome/goodbye messages can be personalised in mu
 
 @run_async
 @user_admin
-def welcome_help(bot: Bot, update: Update):
+def welcome_help(update, context):
     update.effective_message.reply_text(WELC_HELP_TXT, parse_mode=ParseMode.MARKDOWN)
 
 
@@ -468,18 +471,18 @@ __help__ = """
  - /welcomehelp: view more formatting information for custom welcome/goodbye messages.
 """.format(WELC_HELP_TXT)
 
-__mod_name__ = "Welcomes/Goodbyes"
+__mod_name__ = "Greetings"
 
 NEW_MEM_HANDLER = MessageHandler(Filters.status_update.new_chat_members, new_member)
 LEFT_MEM_HANDLER = MessageHandler(Filters.status_update.left_chat_member, left_member)
-WELC_PREF_HANDLER = CommandHandler("welcome", welcome, pass_args=True, filters=Filters.group)
-GOODBYE_PREF_HANDLER = CommandHandler("goodbye", goodbye, pass_args=True, filters=Filters.group)
-SET_WELCOME = CommandHandler("setwelcome", set_welcome, filters=Filters.group)
-SET_GOODBYE = CommandHandler("setgoodbye", set_goodbye, filters=Filters.group)
-RESET_WELCOME = CommandHandler("resetwelcome", reset_welcome, filters=Filters.group)
-RESET_GOODBYE = CommandHandler("resetgoodbye", reset_goodbye, filters=Filters.group)
-CLEAN_WELCOME = CommandHandler("cleanwelcome", clean_welcome, pass_args=True, filters=Filters.group)
-WELCOME_HELP = CommandHandler("welcomehelp", welcome_help)
+WELC_PREF_HANDLER = CustomCommandHandler("welcome", welcome, pass_args=True, filters=Filters.group)
+GOODBYE_PREF_HANDLER = CustomCommandHandler("goodbye", goodbye, pass_args=True, filters=Filters.group)
+SET_WELCOME = CustomCommandHandler("setwelcome", set_welcome, filters=Filters.group)
+SET_GOODBYE = CustomCommandHandler("setgoodbye", set_goodbye, filters=Filters.group)
+RESET_WELCOME = CustomCommandHandler("resetwelcome", reset_welcome, filters=Filters.group)
+RESET_GOODBYE = CustomCommandHandler("resetgoodbye", reset_goodbye, filters=Filters.group)
+CLEAN_WELCOME = CustomCommandHandler("cleanwelcome", clean_welcome, pass_args=True, filters=Filters.group)
+WELCOME_HELP = CustomCommandHandler("welcomehelp", welcome_help)
 
 dispatcher.add_handler(NEW_MEM_HANDLER)
 dispatcher.add_handler(LEFT_MEM_HANDLER)

@@ -2,15 +2,15 @@ from io import BytesIO
 from time import sleep
 from typing import Optional
 
-from telegram import TelegramError, Chat, Message
-from telegram import Update, Bot
+from telegram import TelegramError, Update, Bot, Message
 from telegram.error import BadRequest
 from telegram.ext import MessageHandler, Filters, CommandHandler
 from telegram.ext.dispatcher import run_async
 
 import tg_bot.modules.sql.users_sql as sql
-from tg_bot import dispatcher, OWNER_ID, LOGGER
+from tg_bot import dispatcher, OWNER_ID, LOGGER, CUSTOM_CMD
 from tg_bot.modules.helper_funcs.filters import CustomFilters
+from tg_bot.modules.helper_funcs.handlers import CustomCommandHandler
 
 USERS_GROUP = 4
 
@@ -48,14 +48,14 @@ def get_user_id(username):
 
 
 @run_async
-def broadcast(bot: Bot, update: Update):
+def broadcast(update, context):
     to_send = update.effective_message.text.split(None, 1)
     if len(to_send) >= 2:
         chats = sql.get_all_chats() or []
         failed = 0
         for chat in chats:
             try:
-                bot.sendMessage(int(chat.chat_id), to_send[1])
+                context.bot.sendMessage(int(chat.chat_id), to_send[1])
                 sleep(0.1)
             except TelegramError:
                 failed += 1
@@ -66,7 +66,7 @@ def broadcast(bot: Bot, update: Update):
 
 
 @run_async
-def log_user(bot: Bot, update: Update):
+def log_user(update, context):
     chat = update.effective_chat  # type: Optional[Chat]
     msg = update.effective_message  # type: Optional[Message]
 
@@ -87,11 +87,11 @@ def log_user(bot: Bot, update: Update):
 
 
 @run_async
-def chats(bot: Bot, update: Update):
+def chats(update, context):
     all_chats = sql.get_all_chats() or []
     chatfile = 'List of chats.\n'
     for chat in all_chats:
-        chatfile += "{} - ({})\n".format(chat.chat_name, chat.chat_id)
+        chatfile += "{} • ({})\n".format(chat.chat_name, chat.chat_id)
 
     with BytesIO(str.encode(chatfile)) as output:
         output.name = "chatlist.txt"
@@ -103,7 +103,7 @@ def __user_info__(user_id):
     if user_id == dispatcher.bot.id:
         return """I've seen them in... Wow. Are they stalking me? They're in all the same places I am... oh. It's me."""
     num_chats = sql.get_user_num_chats(user_id)
-    return """I've seen them in <code>{}</code> chats in total.""".format(num_chats)
+    return "" #"I've seen them in <code>{}</code> chats in total.""".format(num_chats)
 
 
 def __stats__():
@@ -124,7 +124,7 @@ __mod_name__ = "Users"
 
 BROADCAST_HANDLER = CommandHandler("broadcast", broadcast, filters=Filters.user(OWNER_ID))
 USER_HANDLER = MessageHandler(Filters.all & Filters.group, log_user)
-CHATLIST_HANDLER = CommandHandler("chatlist", chats, filters=CustomFilters.sudo_filter)
+CHATLIST_HANDLER = CustomCommandHandler("chatlist", chats, filters=Filters.user(OWNER_ID))
 
 dispatcher.add_handler(USER_HANDLER, USERS_GROUP)
 dispatcher.add_handler(BROADCAST_HANDLER)
