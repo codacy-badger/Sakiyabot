@@ -69,7 +69,7 @@ def warn(user: User, chat: Chat, reason: str, message: Message, warner: User = N
         keyboard = InlineKeyboardMarkup(
             [[InlineKeyboardButton("Remove warn", callback_data="rm_warn({})".format(user.id))]])
 
-        reply = "{} has {}/{} warnings... watch out!".format(mention_html(user.id, user.first_name), num_warns,
+        reply = "User {} has {}/{} warnings... watch out!".format(mention_html(user.id, user.first_name), num_warns,
                                                              limit)
         if reason:
             reply += "\nReason for last warn:\n{}".format(html.escape(reason))
@@ -121,7 +121,7 @@ def button(update, context) -> str:
                                                                 user_member.user.id)
         else:
             update.effective_message.edit_text(
-                "User has already has no warns.".format(mention_html(user.id, user.first_name)),
+                "User {} has already no warns.".format(mention_html(user_member.user.id, user_member.user.first_name)),
                 parse_mode=ParseMode.HTML)
 
     return ""
