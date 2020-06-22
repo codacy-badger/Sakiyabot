@@ -1,8 +1,8 @@
 import html
 from typing import List
 
-from telegram import Message, Chat, Update, Bot, User
-from telegram import ParseMode
+from telegram import Message, Chat, Update
+from telegram import ParseMode, Bot, User
 from telegram.error import BadRequest
 from telegram.ext import CommandHandler, Filters
 from telegram.ext.dispatcher import run_async
@@ -72,6 +72,7 @@ def demote(update, context):
     chat = update.effective_chat  # type: Optional[Chat]
     message = update.effective_message  # type: Optional[Message]
     user = update.effective_user  # type: Optional[User]
+    args = context.args
 
     user_id = extract_user(message, args)
     if not user_id:
@@ -191,6 +192,9 @@ def invite(update, context):
 
 @run_async
 def adminlist(update, context):
+    if update.effective_message.chat.type == "private":
+        update.effective_message.reply_text("This command can only be used in a group, not in PM.")
+        return
     administrators = update.effective_chat.get_administrators()
     text = "Admins in *{}*:".format(update.effective_chat.title or "this chat")
     for admin in administrators:
@@ -198,7 +202,7 @@ def adminlist(update, context):
         name = "[{}](tg://user?id={})".format(user.first_name + (user.last_name or ""), user.id)
         if user.username:
             name = escape_markdown("@" + user.username)
-        text += "\n - {}".format(name)
+        text += "\n • {} [`{}`]".format(name, user.id)
 
     update.effective_message.reply_text(text, parse_mode=ParseMode.MARKDOWN)
 
