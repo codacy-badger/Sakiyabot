@@ -98,11 +98,12 @@ def locktypes(bot: Bot, update: Update):
 @user_admin
 @bot_can_delete
 @loggable
-def lock(bot: Bot, update: Update, args: List[str]) -> str:
+def lock(update, context):
     chat = update.effective_chat  # type: Optional[Chat]
     user = update.effective_user  # type: Optional[User]
     message = update.effective_message  # type: Optional[Message]
-    if can_delete(chat, bot.id):
+    args = context.args
+    if can_delete(chat, context.bot.id):
         if len(args) >= 1:
             if args[0] in LOCK_TYPES:
                 sql.update_lock(chat.id, args[0], locked=True)
@@ -139,10 +140,11 @@ def lock(bot: Bot, update: Update, args: List[str]) -> str:
 @run_async
 @user_admin
 @loggable
-def unlock(bot: Bot, update: Update, args: List[str]) -> str:
+def unlock(update, context):
     chat = update.effective_chat  # type: Optional[Chat]
     user = update.effective_user  # type: Optional[User]
     message = update.effective_message  # type: Optional[Message]
+    args = context.args
     if is_user_admin(chat, message.from_user.id):
         if len(args) >= 1:
             if args[0] in LOCK_TYPES:
@@ -184,24 +186,24 @@ def unlock(bot: Bot, update: Update, args: List[str]) -> str:
                 message.reply_text("What are you trying to unlock...? Try /locktypes for the list of lockables")
 
         else:
-            bot.sendMessage(chat.id, "What are you trying to unlock...?")
+            context.bot.sendMessage(chat.id, "What are you trying to unlock...?")
 
     return ""
 
 
 @run_async
 @user_not_admin
-def del_lockables(bot: Bot, update: Update):
+def del_lockables(update, context):
     chat = update.effective_chat  # type: Optional[Chat]
     message = update.effective_message  # type: Optional[Message]
 
-    for lockable, filter in LOCK_TYPES.items():
+    for lockable in LOCK_TYPES.items():
         if filter(message) and sql.is_locked(chat.id, lockable) and can_delete(chat, bot.id):
             if lockable == "bots":
                 new_members = update.effective_message.new_chat_members
                 for new_mem in new_members:
                     if new_mem.is_bot:
-                        if not is_bot_admin(chat, bot.id):
+                        if not is_bot_admin(chat, context.bot.id):
                             message.reply_text("I see a bot, and I've been told to stop them joining... "
                                                "but I'm not admin!")
                             return
@@ -222,10 +224,10 @@ def del_lockables(bot: Bot, update: Update):
 
 @run_async
 @user_not_admin
-def rest_handler(bot: Bot, update: Update):
+def rest_handler(update, context):
     msg = update.effective_message  # type: Optional[Message]
     chat = update.effective_chat  # type: Optional[Chat]
-    for restriction, filter in RESTRICTION_TYPES.items():
+    for restriction in RESTRICTION_TYPES.items():
         if filter(msg) and sql.is_restr_locked(chat.id, restriction) and can_delete(chat, bot.id):
             try:
                 msg.delete()
@@ -273,7 +275,7 @@ def build_lock_message(chat_id):
 
 @run_async
 @user_admin
-def list_locks(bot: Bot, update: Update):
+def list_locks(update, context):
     chat = update.effective_chat  # type: Optional[Chat]
 
     res = build_lock_message(chat.id)
