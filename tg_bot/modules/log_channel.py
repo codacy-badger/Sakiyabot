@@ -12,6 +12,7 @@ if is_module_loaded(FILENAME):
 
     from tg_bot import dispatcher, LOGGER
     from tg_bot.modules.helper_funcs.chat_status import user_admin
+    from tg_bot.modules.helper_funcs.handlers import CustomCommandHandler
     from tg_bot.modules.sql import log_channel_sql as sql
 
 
@@ -28,7 +29,7 @@ if is_module_loaded(FILENAME):
                                                                                            message.message_id)
                 log_chat = sql.get_chat_log_channel(chat.id)
                 if log_chat:
-                    send_log(bot, log_chat, chat.id, result)
+                    send_log(context.bot, log_chat, chat.id, result)
             elif result == "":
                 pass
             else:
@@ -62,7 +63,7 @@ if is_module_loaded(FILENAME):
 
         log_channel = sql.get_chat_log_channel(chat.id)
         if log_channel:
-            log_channel_info = bot.get_chat(log_channel)
+            log_channel_info = context.bot.get_chat(log_channel)
             message.reply_text(
                 "This group has all it's logs sent to: {} (`{}`)".format(escape_markdown(log_channel_info.title),
                                                                          log_channel),
@@ -96,11 +97,11 @@ if is_module_loaded(FILENAME):
                                      chat.title or chat.first_name))
             except Unauthorized as excp:
                 if excp.message == "Forbidden: bot is not a member of the channel chat":
-                    bot.send_message(chat.id, "Successfully set log channel!")
+                    context.bot.send_message(chat.id, "Successfully set log channel!")
                 else:
                     LOGGER.exception("ERROR in setting the log channel.")
 
-            bot.send_message(chat.id, "Successfully set log channel!")
+            context.bot.send_message(chat.id, "Successfully set log channel!")
 
         else:
             message.reply_text("The steps to set a log channel are:\n"
@@ -117,7 +118,7 @@ if is_module_loaded(FILENAME):
 
         log_channel = sql.stop_chat_logging(chat.id)
         if log_channel:
-            bot.send_message(log_channel, "Channel has been unlinked from {}".format(chat.title))
+            context.bot.send_message(log_channel, "Channel has been unlinked from {}".format(chat.title))
             message.reply_text("Log channel has been un-set.")
 
         else:
@@ -155,9 +156,9 @@ Setting the log channel is done by:
 
     __mod_name__ = "Log Channels"
 
-    LOG_HANDLER = CommandHandler("logchannel", logging)
-    SET_LOG_HANDLER = CommandHandler("setlog", setlog)
-    UNSET_LOG_HANDLER = CommandHandler("unsetlog", unsetlog)
+    LOG_HANDLER = CustomCommandHandler("logchannel", logging)
+    SET_LOG_HANDLER = CustomCommandHandler("setlog", setlog)
+    UNSET_LOG_HANDLER = CustomCommandHandler("unsetlog", unsetlog)
 
     dispatcher.add_handler(LOG_HANDLER)
     dispatcher.add_handler(SET_LOG_HANDLER)
