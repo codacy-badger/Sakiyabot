@@ -121,7 +121,7 @@ def button(update, context) -> str:
                                                                 user_member.user.id)
         else:
             update.effective_message.edit_text(
-                "User {} has already no warns.".format(mention_html(member.user.id, member.user.first_name)),
+                "User has already no warns.".format(mention_html(user.id, user.first_name)),
                 parse_mode=ParseMode.HTML)
 
     return ""
@@ -262,7 +262,7 @@ def remove_warn_filter(update, context):
     for filt in chat_filters:
         if filt == to_remove:
             sql.remove_warn_filter(chat.id, to_remove)
-            msg.reply_text("Yep, I'll stop warning people for that.")
+            msg.reply_text("Yep, I'll stop warning people for <code>{}</code>.".format(to_remove), parse_mode='HTML')
             raise DispatcherHandlerStop
 
     msg.reply_text("That's not a current warning filter - run /warnlist for all active warning filters.")
