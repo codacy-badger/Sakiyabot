@@ -5,3 +5,4 @@ sqlalchemy
 python-telegram-bot==12.7
 psycopg2-binary
 feedparser
+alphabet_detector
