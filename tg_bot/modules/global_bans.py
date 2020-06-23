@@ -53,6 +53,10 @@ def gban(update, context):
     if not user_id:
         message.reply_text("You don't seem to be referring to a user.")
         return
+    
+    if user_id is OWNER_ID:
+        message.reply_text("I'm not gonna Gban my master nice try -_-")
+        return
 
     if int(user_id) in SUDO_USERS:
         message.reply_text("I spy, with my little eye... a sudo user war! Why are you guys turning on each other?")
@@ -62,7 +66,7 @@ def gban(update, context):
         message.reply_text("OOOH someone's trying to gban a support user! *grabs popcorn*")
         return
 
-    if user_id == context.bot.id:
+    if user_id is context.bot.id:
         message.reply_text("-_- So funny, lets gban myself why don't I? Nice try.")
         return
 
@@ -264,13 +268,18 @@ def __user_info__(user_id):
     is_gbanned = sql.is_user_gbanned(user_id)
 
     text = "Globally banned: <b>{}</b>"
+    
+    if user_id is OWNER_ID:
+        return ""
+    if int(user_id) in SUDO_USERS + SUPPORT_USERS:
+        return ""
     if is_gbanned:
-        text = text.format("Yes")
+        text = text.format("Yeah")
         user = sql.get_gbanned_user(user_id)
         if user.reason:
             text += "\nReason: {}".format(html.escape(user.reason))
     else:
-        text = text.format("No")
+        text = text.format("Na")
     return text
 
 
