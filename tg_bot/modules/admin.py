@@ -2,7 +2,7 @@ import html
 from typing import List
 
 from telegram import Message, Chat, Update
-from telegram import ParseMode, Bot, User
+from telegram import ParseMode, User
 from telegram.error import BadRequest
 from telegram.ext import CommandHandler, Filters
 from telegram.ext.dispatcher import run_async
@@ -49,12 +49,14 @@ def promote(update, context):
                           can_post_messages=bot_member.can_post_messages,
                           can_edit_messages=bot_member.can_edit_messages,
                           can_delete_messages=bot_member.can_delete_messages,
-                          # can_invite_users=bot_member.can_invite_users,
+                          can_invite_users=bot_member.can_invite_users,
                           can_restrict_members=bot_member.can_restrict_members,
                           can_pin_messages=bot_member.can_pin_messages,
                           can_promote_members=bot_member.can_promote_members)
 
-    message.reply_text("Successfully promoted!")
+    message.reply_text("Admin {} Appointed {}'s as a new admin in <b>{}</b>.".format(mention_html(user.id, user.first_name),
+                                                                                   mention_html(user_member.user.id, user_member.user.first_name),
+                                                                                   chat.title), parse_mode='HTML')
     return "<b>{}:</b>" \
            "\n#PROMOTED" \
            "\n<b>Admin:</b> {}" \
@@ -102,7 +104,9 @@ def demote(update, context):
                               can_restrict_members=False,
                               can_pin_messages=False,
                               can_promote_members=False)
-        message.reply_text("Successfully demoted!")
+        message.reply_text("Admin {} Demoted {}'s in <b>{}</b>.".format(mention_html(user.id, user.first_name),
+                                                                                       mention_html(user_member.user.id, user_member.user.first_name),
+                                                                                       chat.title), parse_mode='HTML')
         return "<b>{}:</b>" \
                "\n#DEMOTED" \
                "\n<b>Admin:</b> {}" \
@@ -202,7 +206,7 @@ def adminlist(update, context):
         name = "[{}](tg://user?id={})".format(user.first_name + (user.last_name or ""), user.id)
         if user.username:
             name = escape_markdown("@" + user.username)
-        text += "\n • {} [`{}`]".format(name, user.id)
+        text += "\n • {} (`{}`)".format(name, user.id)
 
     update.effective_message.reply_text(text, parse_mode=ParseMode.MARKDOWN)
 
