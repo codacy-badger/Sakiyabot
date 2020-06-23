@@ -1,5 +1,5 @@
 # Sakiyabot
-A modular telegram Python bot running on python3 with an sqlalchemy database. fork of [tg_bot](https://github.com/Paulsonoflars/tg_bot
+A modular telegram Python bot running on python3 with an sqlalchemy database. fork of [tg_bot](https://github.com/Paulsonoflars/tg_bot).
 
 Originally a simple group management bot with multiple admin features, it has evolved into becoming a basis for modular
 bots aiming to provide simple plugin expansion via a simple drag and drop.
