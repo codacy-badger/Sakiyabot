@@ -54,7 +54,7 @@ def gban(update, context):
         message.reply_text("You don't seem to be referring to a user.")
         return
     
-    if user_id is OWNER_ID:
+    if user_id == OWNER_ID:
         message.reply_text("I'm not gonna Gban my master nice try -_-")
         return
 
