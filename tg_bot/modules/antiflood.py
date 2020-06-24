@@ -35,7 +35,7 @@ def check_flood(update, context) -> str:
         return ""
 
     try:
-        context.bot.restrict_chat_member(chat.id, user_id, permissions=ChatPermissions(can_send_messages=False))
+        context.bot.restrict_chat_member(chat.id, user.id, permissions=ChatPermissions(can_send_messages=False))
         msg.reply_text("I like to leave the flooding to natural disasters. But you, you were just a "
                        "disappointment. Get tapped.")
 
