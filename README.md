@@ -6,6 +6,7 @@ bots aiming to provide simple plugin expansion via a simple drag and drop.
 
 Can be found on telegram as [Sakiya](https://t.me/Sakiyabot).
 
+<a href="https://ibb.co/6FWXfkN"><img src="https://i.ibb.co/bXKb8k7/images-50.jpg" alt="images-50" border="0"></a>
 
 ## Deploy on Heroku:
 
