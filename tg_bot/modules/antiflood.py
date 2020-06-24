@@ -1,14 +1,15 @@
 import html
 from typing import List
 
-from telegram import Message, Chat, Update, Bot
+from telegram import Message, Chat, Update, Bot, ChatPermissions
 from telegram.error import BadRequest
-from telegram.ext import Filters, MessageHandler, CommandHandler, run_async
+from telegram.ext import Filters, MessageHandler, run_async
 from telegram.utils.helpers import mention_html
 
 from tg_bot import dispatcher
 from tg_bot.modules.helper_funcs.chat_status import is_user_admin, user_admin, can_restrict
 from tg_bot.modules.log_channel import loggable
+from tg_bot.modules.helper_funcs.handlers import CustomCommandHandler
 from tg_bot.modules.sql import antiflood_sql as sql
 
 FLOOD_GROUP = 3
@@ -29,27 +30,27 @@ def check_flood(update, context) -> str:
         sql.update_flood(chat.id, None)
         return ""
 
-    should_ban = sql.update_flood(chat.id, user.id)
-    if not should_ban:
+    should_mute = sql.update_flood(chat.id, user.id)
+    if not should_mute:
         return ""
 
     try:
-        chat.kick_member(user.id)
+        context.bot.restrict_chat_member(chat.id, user_id, permissions=ChatPermissions(can_send_messages=False))
         msg.reply_text("I like to leave the flooding to natural disasters. But you, you were just a "
-                       "disappointment. Get out.")
+                       "disappointment. Get tapped.")
 
         return "<b>{}:</b>" \
-               "\n#BANNED" \
+               "\n#MUTE" \
                "\n<b>User:</b> {}" \
                "\nFlooded the group.".format(html.escape(chat.title),
                                              mention_html(user.id, user.first_name))
 
     except BadRequest:
-        msg.reply_text("I can't kick people here, give me permissions first! Until then, I'll disable antiflood.")
+        msg.reply_text("I can't mute people here, give me permissions first! Until then, I'll disable antiflood.")
         sql.set_flood(chat.id, 0)
         return "<b>{}:</b>" \
                "\n#INFO" \
-               "\nDon't have kick permissions, so automatically disabled antiflood.".format(chat.title)
+               "\nDon't have permissions to mute someone, so I'm gonna disable antiflood.".format(chat.title)
 
 
 @run_async
@@ -106,7 +107,7 @@ def flood(update, context):
         update.effective_message.reply_text("I'm not currently enforcing flood control!")
     else:
         update.effective_message.reply_text(
-            "I'm currently banning users if they send more than {} consecutive messages.".format(limit))
+            "I'm currently muting members if they send more than {} consecutive messages.".format(limit))
 
 
 def __migrate__(old_chat_id, new_chat_id):
@@ -130,10 +131,10 @@ __help__ = """
 
 __mod_name__ = "AntiFlood"
 
-FLOOD_BAN_HANDLER = MessageHandler(Filters.all & ~Filters.status_update & Filters.group, check_flood)
-SET_FLOOD_HANDLER = CommandHandler("setflood", set_flood, pass_args=True, filters=Filters.group)
-FLOOD_HANDLER = CommandHandler("flood", flood, filters=Filters.group)
+FLOOD_MUTE_HANDLER = MessageHandler(Filters.all & ~Filters.status_update & Filters.group, check_flood)
+SET_FLOOD_HANDLER = CustomCommandHandler("setflood", set_flood, pass_args=True, filters=Filters.group)
+FLOOD_HANDLER = CustomCommandHandler("flood", flood, filters=Filters.group)
 
-dispatcher.add_handler(FLOOD_BAN_HANDLER, FLOOD_GROUP)
+dispatcher.add_handler(FLOOD_MUTE_HANDLER, FLOOD_GROUP)
 dispatcher.add_handler(SET_FLOOD_HANDLER)
 dispatcher.add_handler(FLOOD_HANDLER)
