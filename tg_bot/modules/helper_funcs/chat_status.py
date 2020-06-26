@@ -23,6 +23,12 @@ def is_user_ban_protected(chat: Chat, user_id: int, member: ChatMember = None) -
     return member.status in ('administrator', 'creator')
 
 
+def is_user_creator(chat: Chat, user_id: int, member: ChatMember = None) -> bool:
+    if not member:
+        member = chat.get_member(user_id)
+    return member.status in ('creator')
+
+
 def is_user_admin(chat: Chat, user_id: int, member: ChatMember = None) -> bool:
     if chat.type == 'private' \
             or user_id in SUDO_USERS \
