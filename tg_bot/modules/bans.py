@@ -256,7 +256,7 @@ def kick(update, context):
 @can_restrict
 def kickme(update, context):
     user_id = update.effective_message.from_user.id
-    member = chat.get_member(user_id)
+    member = update.effective_chat.get_member(user_id)
     if user_id == OWNER_ID:
         update.effective_message.reply_text("I can't kick My Master")
         return
