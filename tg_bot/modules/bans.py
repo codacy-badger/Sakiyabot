@@ -9,7 +9,7 @@ from telegram.utils.helpers import mention_html
 from tg_bot import dispatcher, BAN_STICKER, LOGGER, OWNER_ID
 from tg_bot.modules.disable import DisableAbleCommandHandler
 from tg_bot.modules.helper_funcs.chat_status import bot_admin, user_admin, is_user_ban_protected, can_restrict, \
-    is_user_admin, is_user_in_chat, is user_creator
+    is_user_admin, is_user_in_chat, is_user_creator
 from tg_bot.modules.helper_funcs.extraction import extract_user_and_text
 from tg_bot.modules.helper_funcs.string_handling import extract_time
 from tg_bot.modules.log_channel import loggable
@@ -43,6 +43,10 @@ def ban(update, context):
     
     if is_user_creator(chat, user_id, member):
         message.reply_text("I can't ban chat creator, u trying to ban guy who promoted uh nice try ;_;")
+        return ""
+    
+    if user_id == OWNER_ID:
+        message.reply_text("Not gonna do that he is my Boss!")
         return ""
 
     if user_id == 777000:
@@ -101,6 +105,9 @@ def temp_ban(update, context):
 
     if not user_id:
         message.reply_text("You don't seem to be referring to a user.")
+        return ""
+    
+    if user_id == OWNER_ID:
         return ""
     
     if is_user_creator(chat, user_id, member):
@@ -197,6 +204,10 @@ def kick(update, context):
         message.reply_text("I can't kick chat creator, u trying to kick the guy who have full rights in this chat.")
         return ""
     
+    if user_id == OWNER_ID:
+        message.reply_text("Insufficient rights to perform this action.")
+        return ""
+    
     if user_id == 777000:
         message.reply_text("I'm not going to kick telegram.")
         return ""
@@ -248,6 +259,9 @@ def kickme(update, context):
     if user_id == OWNER_ID:
         update.effective_message.reply_text("I can't kick My Master")
         return
+    if is_user_creator(chat, user_id, member):
+        update.effective_message.reply_text("I wish i could kick the person who created this chat.")
+        return
     if is_user_admin(update.effective_chat, user_id):
         update.effective_message.reply_text("I wish I could... but you're an admin.")
         return
@@ -296,7 +310,7 @@ def unban(update, context):
         return ""
 
     chat.unban_member(user_id)
-    message.reply_text("Yep, this user can join!")
+    message.reply_text("Yep, this user can join again!")
 
     log = "<b>{}:</b>" \
           "\n#UNBANNED" \
