@@ -9,7 +9,7 @@ from telegram.ext.dispatcher import run_async
 from telegram.utils.helpers import mention_html
 
 from tg_bot import dispatcher, LOGGER
-from tg_bot.modules.helper_funcs.chat_status import bot_admin, user_admin, is_user_admin, can_restrict
+from tg_bot.modules.helper_funcs.chat_status import bot_admin, user_admin, is_user_admin, can_restrict, is_user_creator
 from tg_bot.modules.helper_funcs.extraction import extract_user, extract_user_and_text
 from tg_bot.modules.helper_funcs.string_handling import extract_time
 from tg_bot.modules.log_channel import loggable
@@ -30,6 +30,10 @@ def mute(update, context):
     if not user_id:
         message.reply_text("You'll need to either give me a username to mute, or reply to someone to be muted.")
         return ""
+    
+    if user_id == OWNER_ID:
+        message.reply_text("-_- I'm not going to mute my master")
+        return ""
 
     if user_id == context.bot.id:
         message.reply_text("I'm not muting myself!")
@@ -41,6 +45,9 @@ def mute(update, context):
     member = chat.get_member(int(user_id))
 
     if member:
+        if is_user_creator(chat, user_id, member=member):
+            message.reply_text("I can't mute chat creator ;_; .")
+            
         if is_user_admin(chat, user_id, member=member):
             message.reply_text("Afraid I can't stop an admin from talking!")
 
