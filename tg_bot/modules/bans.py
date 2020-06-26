@@ -9,7 +9,7 @@ from telegram.utils.helpers import mention_html
 from tg_bot import dispatcher, BAN_STICKER, LOGGER, OWNER_ID
 from tg_bot.modules.disable import DisableAbleCommandHandler
 from tg_bot.modules.helper_funcs.chat_status import bot_admin, user_admin, is_user_ban_protected, can_restrict, \
-    is_user_admin, is_user_in_chat
+    is_user_admin, is_user_in_chat, is user_creator
 from tg_bot.modules.helper_funcs.extraction import extract_user_and_text
 from tg_bot.modules.helper_funcs.string_handling import extract_time
 from tg_bot.modules.log_channel import loggable
@@ -40,6 +40,10 @@ def ban(update, context):
             return ""
         else:
             raise
+    
+    if is_user_creator(chat, user_id, member):
+        message.reply_text("I can't ban chat creator, u trying to ban guy who promoted uh nice try ;_;")
+        return ""
 
     if user_id == 777000:
         message.reply_text("I'm not going to ban telegram.")
@@ -98,6 +102,11 @@ def temp_ban(update, context):
     if not user_id:
         message.reply_text("You don't seem to be referring to a user.")
         return ""
+    
+    if is_user_creator(chat, user_id, member):
+        message.reply_text("I can't ban chat creator, u trying to ban guy who promoted u nice try ;__;")
+        return ""
+    
     if user_id == 777000:
         message.reply_text("I'm not going to ban telegram.")
         return ""
@@ -183,6 +192,11 @@ def kick(update, context):
 
     if not user_id:
         return ""
+    
+    if is_user_creator(chat, user_id, member):
+        message.reply_text("I can't kick chat creator, u trying to kick the guy who have full rights in this chat.")
+        return ""
+    
     if user_id == 777000:
         message.reply_text("I'm not going to kick telegram.")
         return ""
@@ -272,6 +286,9 @@ def unban(update, context):
 
     if user_id == context.bot.id:
         message.reply_text("How would I unban myself if I wasn't here...?")
+        return ""
+    
+    if is_user_creator(chat, user_id, member):
         return ""
 
     if is_user_in_chat(chat, user_id):
