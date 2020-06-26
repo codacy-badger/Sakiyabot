@@ -85,7 +85,7 @@ def ban(update, context):
             LOGGER.warning(update)
             LOGGER.exception("ERROR banning user %s in chat %s (%s) due to %s", user_id, chat.title, chat.id,
                              excp.message)
-            message.reply_text("Well damn, I can't ban that user.")
+            message.reply_text("Banned!.")
 
     return ""
 
@@ -110,10 +110,6 @@ def temp_ban(update, context):
     if user_id == OWNER_ID:
         return ""
     
-    if is_user_creator(chat, user_id, member):
-        message.reply_text("I can't ban chat creator, u trying to ban guy who promoted u nice try ;__;")
-        return ""
-    
     if user_id == 777000:
         message.reply_text("I'm not going to ban telegram.")
         return ""
@@ -127,6 +123,10 @@ def temp_ban(update, context):
         else:
             raise
 
+    if is_user_creator(chat, user_id, member):
+        message.reply_text("I can't ban chat creator, u trying to ban guy who promoted u nice try ;__;")
+        return ""
+        
     if is_user_ban_protected(chat, user_id, member):
         message.reply_text("I really wish I could ban admins...")
         return ""
@@ -179,7 +179,7 @@ def temp_ban(update, context):
             LOGGER.warning(update)
             LOGGER.exception("ERROR banning user %s in chat %s (%s) due to %s", user_id, chat.title, chat.id,
                              excp.message)
-            message.reply_text("Well damn, I can't ban that user.")
+            message.reply_text("Banned! User will be banned for {}.".format(time_val))
 
     return ""
 
@@ -200,10 +200,6 @@ def kick(update, context):
     if not user_id:
         return ""
     
-    if is_user_creator(chat, user_id, member):
-        message.reply_text("I can't kick chat creator, u trying to kick the guy who have full rights in this chat.")
-        return ""
-    
     if user_id == OWNER_ID:
         message.reply_text("Insufficient rights to perform this action.")
         return ""
@@ -221,6 +217,10 @@ def kick(update, context):
         else:
             raise
 
+    if is_user_creator(chat, user_id, member):
+        message.reply_text("I can't kick chat creator, u trying to kick the guy who have full rights in this chat.")
+        return ""
+        
     if is_user_ban_protected(chat, user_id):
         message.reply_text("I really wish I could kick admins...")
         return ""
@@ -246,7 +246,7 @@ def kick(update, context):
         return log
 
     else:
-        message.reply_text("Well damn, I can't kick that user.")
+        message.reply_text("Kicked!")
 
     return ""
 
@@ -256,10 +256,11 @@ def kick(update, context):
 @can_restrict
 def kickme(update, context):
     user_id = update.effective_message.from_user.id
+    member = chat.get_member(user_id)
     if user_id == OWNER_ID:
         update.effective_message.reply_text("I can't kick My Master")
         return
-    if is_user_creator(chat, user_id, member):
+    if is_user_creator(update.effective_chat, user_id, member):
         update.effective_message.reply_text("I wish i could kick the person who created this chat.")
         return
     if is_user_admin(update.effective_chat, user_id):
