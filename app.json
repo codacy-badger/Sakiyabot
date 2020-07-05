@@ -27,10 +27,6 @@
       "description": "Your username",
       "value": "Nitin_xD"
     },
-    "WEBHOOK": {
-      "description": "Setting this to ANYTHING will enable webhooks when in env mode messages",
-      "value": "ANYTHING"
-    },
     "URL": {
       "description": "The Heroku App URL similar to https://<appname>.herokuapp.com/",
       "value": ""
@@ -69,7 +65,7 @@
     },
     "CUSTOM_CMD": {
       "description": "Whether to allow using exclamation marks ! for commands as well as /.",
-      "value": "/"
+      "value": "/ ! *"
     },
     "BAN_STICKER": {
       "description": "Which sticker to use when banning people. Use https://telegram.dog/ShowJsonBot to get the file_id",
