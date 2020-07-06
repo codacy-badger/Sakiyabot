@@ -168,7 +168,8 @@ BLACKLIST_HANDLER = DisableAbleCommandHandler("blacklist", blacklist, filters=Fi
 ADD_BLACKLIST_HANDLER = CustomCommandHandler("addblacklist", add_blacklist, filters=Filters.group)
 UNBLACKLIST_HANDLER = CustomCommandHandler(["unblacklist", "rmblacklist"], unblacklist, filters=Filters.group)
 BLACKLIST_DEL_HANDLER = MessageHandler(
-    (Filters.text | Filters.command | Filters.sticker | Filters.photo) & Filters.group, del_blacklist, edited_updates=True)
+    (Filters.text | Filters.command | Filters.sticker | Filters.photo) & Filters.group,
+    del_blacklist)
 
 dispatcher.add_handler(BLACKLIST_HANDLER)
 dispatcher.add_handler(ADD_BLACKLIST_HANDLER)
