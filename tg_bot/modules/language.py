@@ -32,6 +32,24 @@ def curn_locale(update):
     else:
         update.message.reply_text("Current locale for this chat is: *English*", parse_mode = 'MARKDOWN')
 
+        
+__help__ = """
+Only For Admins:
+ - /localenow: to know the current Lang.
+ - /locale: to select the Lang that u want.
+ Ex: /locale en. 
+Supported languages are:
+ De 🇩🇪, 
+ En 🇬🇧, 
+ Nl 🇳🇱, 
+ Id 🇮🇩, 
+ Pt 🇵🇹
+ Fi 🇫🇮
+Fell free to suggest more.
+"""
+
+__mod_name__ = "Language"
+
 CURN_LOCALE_HANDLER = CommandHandler("localenow", curn_locale)
 LOCALE_HANDLER = CommandHandler(["set_locale", "locale"], change_locale, pass_args=True)
 dispatcher.add_handler(LOCALE_HANDLER)
