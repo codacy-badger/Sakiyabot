@@ -1,7 +1,7 @@
 import html
 from typing import List
 
-from telegram import Message, Chat, Update
+from telegram import Message, Chat
 from telegram import ParseMode, User
 from telegram.error import BadRequest
 from telegram.ext import CommandHandler, Filters
@@ -13,7 +13,7 @@ from tg_bot.modules.disable import DisableAbleCommandHandler
 from tg_bot.modules.helper_funcs.chat_status import bot_admin, can_promote, user_admin, can_pin
 from tg_bot.modules.helper_funcs.extraction import extract_user
 from tg_bot.modules.log_channel import loggable
-
+from tg_bot.modules.translations.strings import tld
 
 @run_async
 @bot_admin
@@ -29,16 +29,16 @@ def promote(update, context):
 
     user_id = extract_user(message, args)
     if not user_id:
-        message.reply_text("You don't seem to be referring to a user.")
+        message.reply_text(tld(chat.id, "You don't seem to be referring to a user."))
         return ""
 
     user_member = chat.get_member(user_id)
     if user_member.status == 'administrator' or user_member.status == 'creator':
-        message.reply_text("How am I meant to promote someone that's already an admin?")
+        message.reply_text(tld(chat.id, "How am I meant to promote someone that's already an admin?"))
         return ""
 
     if user_id == context.bot.id:
-        message.reply_text("I can't promote myself! Get an admin to do it for me.")
+        message.reply_text(tld(chat.id, "I can't promote myself! Get an admin to do it for me."))
         return ""
 
     # set same perms as bot - bot can't assign higher perms than itself!
@@ -54,9 +54,9 @@ def promote(update, context):
                           can_pin_messages=bot_member.can_pin_messages,
                           can_promote_members=bot_member.can_promote_members)
 
-    message.reply_text("Admin {} Appointed {}'s as a new admin in <b>{}</b>.".format(mention_html(user.id, user.first_name),
+    message.reply_text(tld(chat.id, "Admin {} Appointed {}'s as a new admin in <b>{}</b>.".format(mention_html(user.id, user.first_name),
                                                                                    mention_html(user_member.user.id, user_member.user.first_name),
-                                                                                   chat.title), parse_mode='HTML')
+                                                                                   chat.title)), parse_mode='HTML')
     return "<b>{}:</b>" \
            "\n#PROMOTED" \
            "\n<b>Admin:</b> {}" \
@@ -78,20 +78,20 @@ def demote(update, context):
 
     user_id = extract_user(message, args)
     if not user_id:
-        message.reply_text("You don't seem to be referring to a user.")
+        message.reply_text(tld(chat.id, "You don't seem to be referring to a user."))
         return ""
 
     user_member = chat.get_member(user_id)
     if user_member.status == 'creator':
-        message.reply_text("This person CREATED the chat, how would I demote them?")
+        message.reply_text(tld(chat.id, "This person CREATED the chat, how would I demote them?"))
         return ""
 
     if not user_member.status == 'administrator':
-        message.reply_text("Can't demote what wasn't promoted!")
+        message.reply_text(tld(chat.id, "Can't demote what wasn't promoted!"))
         return ""
 
     if user_id == context.bot.id:
-        message.reply_text("I can't demote myself! Get an admin to do it for me.")
+        message.reply_text(tld(chat.id, "I can't demote myself! Get an admin to do it for me."))
         return ""
 
     try:
@@ -104,9 +104,9 @@ def demote(update, context):
                               can_restrict_members=False,
                               can_pin_messages=False,
                               can_promote_members=False)
-        message.reply_text("Admin {} Demoted {}'s in <b>{}</b>.".format(mention_html(user.id, user.first_name),
+        message.reply_text(tld(chat.id, "Admin {} Demoted {}'s in <b>{}</b>.".format(mention_html(user.id, user.first_name),
                                                                                        mention_html(user_member.user.id, user_member.user.first_name),
-                                                                                       chat.title), parse_mode='HTML')
+                                                                                       chat.title)), parse_mode='HTML')
         return "<b>{}:</b>" \
                "\n#DEMOTED" \
                "\n<b>Admin:</b> {}" \
@@ -115,8 +115,8 @@ def demote(update, context):
                                           mention_html(user_member.user.id, user_member.user.first_name))
 
     except BadRequest:
-        message.reply_text("Could not demote. I might not be admin, or the admin status was appointed by another "
-                           "user, so I can't act upon them!")
+        message.reply_text(tld(chat.id, "Could not demote. I might not be admin, or the admin status was appointed by another "
+                           "user, so I can't act upon them!"))
         return ""
 
 
@@ -189,15 +189,16 @@ def invite(update, context):
             invitelink = context.bot.exportChatInviteLink(chat.id)
             update.effective_message.reply_text(invitelink)
         else:
-            update.effective_message.reply_text("I don't have access to the invite link, try changing my permissions!")
+            update.effective_message.reply_text(tld(chat.id, "I don't have access to the invite link, try changing my permissions!"))
     else:
-        update.effective_message.reply_text("I can only give you invite links for supergroups and channels, sorry!")
+        update.effective_message.reply_text(tld(chat.id, "I can only give you invite links for supergroups and channels, sorry!"))
 
 
 @run_async
 def adminlist(update, context):
+    chat = update.effective_chat
     if update.effective_message.chat.type == "private":
-        update.effective_message.reply_text("This command can only be used in a group, not in PM.")
+        update.effective_message.reply_text(tld(chat.id, "This command can only be used in a group, not in PM."))
         return
     administrators = update.effective_chat.get_administrators()
     text = "Admins in *{}*:".format(update.effective_chat.title or "this chat")

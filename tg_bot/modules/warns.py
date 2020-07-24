@@ -19,6 +19,7 @@ from tg_bot.modules.helper_funcs.string_handling import split_quotes
 from tg_bot.modules.log_channel import loggable
 from tg_bot.modules.sql import warns_sql as sql
 from tg_bot.modules.helper_funcs.handlers import CustomCommandHandler
+from tg_bot.modules.translations.strings import tld
 
 WARN_HANDLER_GROUP = 9
 CURRENT_WARNING_FILTER_STRING = "*Current warning filters in this chat:*\n"
@@ -27,10 +28,10 @@ CURRENT_WARNING_FILTER_STRING = "*Current warning filters in this chat:*\n"
 # Not async
 def warn(user: User, chat: Chat, reason: str, message: Message, warner: User = None) -> str:
     if is_user_admin(chat, user.id):
-        message.reply_text("Damn admins, can't even be warned!")
+        message.reply_text(tld(chat.id, "Damn admins, can't even be warned!"))
         return ""
     if user.id == 777000:
-        message.reply_text("Never i can't warn tg.")
+        message.reply_text(tld(chat.id, "Never i can't warn tg."))
         return ""
 
     if warner:
@@ -144,7 +145,7 @@ def warn_user(update, context):
         else:
             return warn(chat.get_member(user_id).user, chat, reason, message, warner)
     else:
-        message.reply_text("No user was designated!")
+        message.reply_text(tld(chat.id, "No user was designated!"))
     return ""
 
 
@@ -162,7 +163,7 @@ def reset_warns(update, context):
 
     if user_id:
         sql.reset_warns(user_id, chat.id)
-        message.reply_text("Warnings have been reset!")
+        message.reply_text(tld(chat.id, "Warnings have been reset!"))
         warned = chat.get_member(user_id).user
         return "<b>{}:</b>" \
                "\n#RESETWARNS" \
@@ -172,7 +173,7 @@ def reset_warns(update, context):
                                                             mention_html(warned.id, warned.first_name),
                                                             warned.id)
     else:
-        message.reply_text("No user has been designated!")
+        message.reply_text(tld(chat.id, "No user has been designated!"))
     return ""
 
 
@@ -197,10 +198,10 @@ def warns(update, context):
             for msg in msgs:
                 update.effective_message.reply_text(msg)
         else:
-            update.effective_message.reply_text(
-                "User has {}/{} warnings, but no reasons for any of them.".format(num_warns, limit))
+            update.effective_message.reply_text(tld(chat.id, 
+                "User has {}/{} warnings, but no reasons for any of them.").format(num_warns, limit))
     else:
-        update.effective_message.reply_text("This user hasn't got any warnings!")
+        update.effective_message.reply_text(tld(chat.id, "This user hasn't got any warnings!"))
 
 
 # Dispatcher handler stop - do not async
@@ -231,7 +232,7 @@ def add_warn_filter(update, context):
 
     sql.add_warn_filter(chat.id, keyword, content)
 
-    update.effective_message.reply_text("Warn handler added for '`{}`'!".format(keyword),
+    update.effective_message.reply_text(tld(chat.id, "Warn handler added for '`{}`'!").format(keyword),
                                         parse_mode=ParseMode.MARKDOWN)
     raise DispatcherHandlerStop
 
@@ -274,7 +275,7 @@ def list_warn_filters(update, context):
     all_handlers = sql.get_chat_warn_triggers(chat.id)
 
     if not all_handlers:
-        update.effective_message.reply_text("No warning filters are active here!")
+        update.effective_message.reply_text(tld(chat.id, "No warning filters are active here!"))
         return
 
     filter_list = CURRENT_WARNING_FILTER_STRING

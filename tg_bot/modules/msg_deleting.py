@@ -11,7 +11,7 @@ from tg_bot import dispatcher, LOGGER
 from tg_bot.modules.disable import DisableAbleCommandHandler
 from tg_bot.modules.helper_funcs.chat_status import user_admin, can_delete
 from tg_bot.modules.log_channel import loggable
-
+from tg_bot.modules.translations.strings import tld
 
 @run_async
 @user_admin
@@ -36,8 +36,8 @@ def purge(update, context):
                     context.bot.deleteMessage(chat.id, m_id)
                 except BadRequest as err:
                     if err.message == "Message can't be deleted":
-                        context.bot.send_message(chat.id, "Cannot delete all messages. The messages may be too old, I might "
-                                                  "not have delete rights, or this might not be a supergroup.")
+                        context.bot.send_message(tld(chat.id, "Cannot delete all messages. The messages may be too old, I might "
+                                                  "not have delete rights, or this might not be a supergroup."))
 
                     elif err.message != "Message to delete not found":
                         LOGGER.exception("Error while purging chat messages.")
@@ -46,13 +46,13 @@ def purge(update, context):
                 msg.delete()
             except BadRequest as err:
                 if err.message == "Message can't be deleted":
-                    context.bot.send_message(chat.id, "Cannot delete all messages. The messages may be too old, I might "
-                                              "not have delete rights, or this might not be a supergroup.")
+                    context.bot.send_message(tld(chat.id, "Cannot delete all messages. The messages may be too old, I might "
+                                              "not have delete rights, or this might not be a supergroup."))
 
                 elif err.message != "Message to delete not found":
                     LOGGER.exception("Error while purging chat messages.")
 
-            context.bot.send_message(chat.id, "Purge complete.")
+            context.bot.send_message(tld(chat.id, "Purge complete."))
             return "<b>{}:</b>" \
                    "\n#PURGE" \
                    "\n<b>Admin:</b> {}" \
@@ -61,7 +61,7 @@ def purge(update, context):
                                                                delete_to - message_id)
 
     else:
-        msg.reply_text("Reply to a message to select where to start purging from.")
+        msg.reply_text(tld(update.effective_chat.id, "Reply to a message to select where to start purging from."))
 
     return ""
 
@@ -82,7 +82,7 @@ def del_message(update, context) -> str:
                    "\nMessage deleted.".format(html.escape(chat.title),
                                                mention_html(user.id, user.first_name))
     else:
-        update.effective_message.reply_text("Whadya want to delete?")
+        update.effective_message.reply_text(tld(update.effective_chat.id, "Whadya want to delete?"))
 
     return ""
 

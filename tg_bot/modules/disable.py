@@ -1,13 +1,14 @@
 from typing import Union, List
 
 from future.utils import string_types
-from telegram import ParseMode, Update, Bot, Chat, MessageEntity
+from telegram import Update, Chat
 from telegram.ext import CommandHandler, MessageHandler, Filters
 from telegram.utils.helpers import escape_markdown
 
 from tg_bot import dispatcher
 from tg_bot.modules.helper_funcs.handlers import CMD_STARTERS
 from tg_bot.modules.helper_funcs.misc import is_module_loaded
+from tg_bot.modules.translations.strings import tld
 
 FILENAME = __name__.rsplit(".", 1)[-1]
 
@@ -92,13 +93,13 @@ if is_module_loaded(FILENAME):
 
             if disable_cmd in set(DISABLE_CMDS + DISABLE_OTHER):
                 sql.disable_command(chat.id, disable_cmd)
-                update.effective_message.reply_text("Disabled the use of `{}`".format(disable_cmd),
-                                                    parse_mode=ParseMode.MARKDOWN)
+                update.effective_message.reply_text(tld(chat.id, "Disabled the use of `{}`").format(disable_cmd),
+                                                    parse_mode='markdown')
             else:
-                update.effective_message.reply_text("That command can't be disabled")
+                update.effective_message.reply_text(tld(chat.id, "That command can't be disabled"))
 
         else:
-            update.effective_message.reply_text("What should I disable?")
+            update.effective_message.reply_text(tld(chat.id, "What should I disable?"))
 
 
     @run_async
@@ -112,26 +113,27 @@ if is_module_loaded(FILENAME):
                 enable_cmd = enable_cmd[1:]
 
             if sql.enable_command(chat.id, enable_cmd):
-                update.effective_message.reply_text("Enabled the use of `{}`".format(enable_cmd),
-                                                    parse_mode=ParseMode.MARKDOWN)
+                update.effective_message.reply_text(tld(chat.id, "Enabled the use of `{}`").format(enable_cmd),
+                                                    parse_mode='markdown')
             else:
-                update.effective_message.reply_text("Is that even disabled?")
+                update.effective_message.reply_text(tld(chat.id, "Is that even disabled?"))
 
         else:
-            update.effective_message.reply_text("What should I enable?")
+            update.effective_message.reply_text(tld(chat.id, "What should I enable?"))
 
 
     @run_async
     @user_admin
     def list_cmds(update, context):
+        chat = update.effective_chat
         if DISABLE_CMDS + DISABLE_OTHER:
             result = ""
             for cmd in set(DISABLE_CMDS + DISABLE_OTHER):
                 result += " - `{}`\n".format(escape_markdown(cmd))
-            update.effective_message.reply_text("The following commands are toggleable:\n{}".format(result),
-                                                parse_mode=ParseMode.MARKDOWN)
+            update.effective_message.reply_text(tld(chat.id, "The following commands are toggleable:\n{}").format(result),
+                                                parse_mode='markdown')
         else:
-            update.effective_message.reply_text("No commands can be disabled.")
+            update.effective_message.reply_text(tld(chat.id, "No commands can be disabled."))
 
 
     # do not async
@@ -149,7 +151,7 @@ if is_module_loaded(FILENAME):
     @run_async
     def commands(update, context):
         chat = update.effective_chat
-        update.effective_message.reply_text(build_curr_disabled(chat.id), parse_mode=ParseMode.MARKDOWN)
+        update.effective_message.reply_text(build_curr_disabled(chat.id), parse_mode='markdown')
 
 
     def __stats__():
@@ -160,11 +162,11 @@ if is_module_loaded(FILENAME):
         sql.migrate_chat(old_chat_id, new_chat_id)
 
 
-    def __chat_settings__(chat_id, user_id):
+    def __chat_settings__(chat_id):
         return build_curr_disabled(chat_id)
 
 
-    __mod_name__ = "Command disabling"
+    __mod_name__ = "CMD-Disable"
 
     __help__ = """
  - /cmds: check the current status of disabled commands

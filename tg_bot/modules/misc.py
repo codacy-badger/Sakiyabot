@@ -2,7 +2,7 @@ import html, random, json, requests
 from datetime import datetime
 from typing import List
 
-from telegram import Chat, Update, Bot, MessageEntity, ParseMode
+from telegram import Chat, Update, Bot, MessageEntity
 from telegram.ext import CommandHandler, run_async, Filters
 from telegram.utils.helpers import escape_markdown, mention_html
 
@@ -12,6 +12,7 @@ from tg_bot.modules.disable import DisableAbleCommandHandler
 from tg_bot.modules.helper_funcs.extraction import extract_user
 from tg_bot.modules.helper_funcs.filters import CustomFilters
 from tg_bot.modules.helper_funcs.handlers import CustomCommandHandler
+from tg_bot.modules.translations.strings import tld
 
 RUN_STRINGS = (
     "Where do you think you're going?",
@@ -171,7 +172,7 @@ def slap(update, context):
 
     repl = temp.format(user1=user1, user2=user2, item=item, hits=hit, throws=throw)
 
-    reply_text(repl, parse_mode=ParseMode.MARKDOWN)
+    reply_text(repl, parse_mode='markdown')
 
 
 @run_async
@@ -185,32 +186,34 @@ def get_bot_ip(update, context):
 
 @run_async
 def get_id(update, context):
+    chat = update.effective_chat
     args = context.args
     user_id = extract_user(update.effective_message, args)
     if user_id:
         if update.effective_message.reply_to_message and update.effective_message.reply_to_message.forward_from:
             user1 = update.effective_message.reply_to_message.from_user
             user2 = update.effective_message.reply_to_message.forward_from
-            update.effective_message.reply_text(
-                "The original sender, {}, has an ID of `{}`.\nThe forwarder, {}, has an ID of `{}`.".format(
+            update.effective_message.reply_text(tld(chat.id, 
+                "The original sender, {}, has an ID of `{}`.\nThe forwarder, {}, has an ID of `{}`.").format(
                     escape_markdown(user2.first_name),
                     user2.id,
                     escape_markdown(user1.first_name),
                     user1.id),
-                parse_mode=ParseMode.MARKDOWN)
+                parse_mode='markdown')
         else:
             user = context.bot.get_chat(user_id)
-            update.effective_message.reply_text("User {}'s id is `{}`.".format(escape_markdown(user.first_name), user.id),
-                                                parse_mode=ParseMode.MARKDOWN)
+            chat = update.effective_chat
+            update.effective_message.reply_text(tld(chat.id, "User {}'s id is `{}`.").format(escape_markdown(user.first_name), user.id),
+                                                parse_mode='markdown')
     else:
         chat = update.effective_chat  # type: Optional[Chat]
         if chat.type == "private":
-            update.effective_message.reply_text("Your id is `{}`.".format(chat.id),
-                                                parse_mode=ParseMode.MARKDOWN)
+            update.effective_message.reply_text(tld(chat.id, "Your id is `{}`.").format(chat.id),
+                                                parse_mode='markdown')
 
         else:
-            update.effective_message.reply_text("This group's id is `{}`.".format(chat.id),
-                                                parse_mode=ParseMode.MARKDOWN)
+            update.effective_message.reply_text(tld(chat.id, "This group's id is `{}`.").format(chat.id),
+                                                parse_mode='markdown')
 
 
 @run_async
@@ -266,15 +269,16 @@ def info(update, context):
         if mod_info:
             text += "\n\n" + mod_info
 
-    update.effective_message.reply_text(text, parse_mode=ParseMode.HTML)
+    update.effective_message.reply_text(text, parse_mode='html')
 
 
 @run_async
 def get_time(update, context):
+    chat = update.effective_chat
     args = context.args
     location = " ".join(args)
     if location.lower() == context.bot.first_name.lower():
-        update.effective_message.reply_text("Its always banhammer time for me!")
+        update.effective_message.reply_text(tld(chat.id, "Its always banhammer time for me!"))
         context.bot.send_sticker(update.effective_chat.id, BAN_STICKER)
         return
 
@@ -309,7 +313,7 @@ def get_time(update, context):
                 offset = json.loads(res.text)['dstOffset']
                 timestamp = json.loads(res.text)['rawOffset']
                 time_there = datetime.fromtimestamp(timenow + timestamp + offset).strftime("%H:%M:%S on %A %d %B")
-                update.message.reply_text("It's {} in {}".format(time_there, location))
+                update.message.reply_text(tld(chat.id, "It's {} in {}").format(time_there, location))
 
 
 @run_async
@@ -350,7 +354,7 @@ Keep in mind that your message <b>MUST</b> contain some text other than just a b
 
 @run_async
 def markdown_help(update, context):
-    update.effective_message.reply_text(MARKDOWN_HELP, parse_mode=ParseMode.HTML)
+    update.effective_message.reply_text(MARKDOWN_HELP, parse_mode='html')
     update.effective_message.reply_text("Try forwarding the following message to me, and you'll see!")
     update.effective_message.reply_text("/save test This is a markdown test. _italics_, *bold*, `code`, "
                                         "[URL](example.com) [button](buttonurl:github.com) "

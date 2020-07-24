@@ -1,7 +1,7 @@
 import html
 from typing import Optional, List
 
-from telegram import Chat, Update, Bot, User, ParseMode, InlineKeyboardMarkup
+from telegram import Chat, Update, Bot, User, InlineKeyboardMarkup
 from telegram.error import BadRequest
 from telegram.ext import MessageHandler, Filters, CommandHandler, run_async
 from telegram.utils.helpers import mention_markdown, mention_html, escape_markdown
@@ -15,6 +15,7 @@ from tg_bot.modules.helper_funcs.string_handling import markdown_parser, \
     escape_invalid_curly_brackets
 from tg_bot.modules.log_channel import loggable
 from tg_bot.modules.helper_funcs.handlers import CustomCommandHandler
+from tg_bot.modules.translations.strings import tld
 
 VALID_WELCOME_FORMATTERS = ['first', 'last', 'fullname', 'username', 'id', 'count', 'chatname', 'mention']
 
@@ -33,36 +34,36 @@ ENUM_FUNC_MAP = {
 # do not async
 def send(update, message, keyboard, backup_message):
     try:
-        msg = update.effective_message.reply_text(message, parse_mode=ParseMode.MARKDOWN, reply_markup=keyboard)
+        msg = update.effective_message.reply_text(message, parse_mode='markdown', reply_markup=keyboard)
     except IndexError:
         msg = update.effective_message.reply_text(markdown_parser(backup_message +
                                                                   "\nNote: the current message was "
                                                                   "invalid due to markdown issues. Could be "
                                                                   "due to the user's name."),
-                                                  parse_mode=ParseMode.MARKDOWN)
+                                                  parse_mode='markdown')
     except KeyError:
         msg = update.effective_message.reply_text(markdown_parser(backup_message +
                                                                   "\nNote: the current message is "
                                                                   "invalid due to an issue with some misplaced "
                                                                   "curly brackets. Please update"),
-                                                  parse_mode=ParseMode.MARKDOWN)
+                                                  parse_mode='markdown')
     except BadRequest as excp:
         if excp.message == "Button_url_invalid":
             msg = update.effective_message.reply_text(markdown_parser(backup_message +
                                                                       "\nNote: the current message has an invalid url "
                                                                       "in one of its buttons. Please update."),
-                                                      parse_mode=ParseMode.MARKDOWN)
+                                                      parse_mode='markdown')
         elif excp.message == "Unsupported url protocol":
             msg = update.effective_message.reply_text(markdown_parser(backup_message +
                                                                       "\nNote: the current message has buttons which "
                                                                       "use url protocols that are unsupported by "
                                                                       "telegram. Please update."),
-                                                      parse_mode=ParseMode.MARKDOWN)
+                                                      parse_mode='markdown')
         elif excp.message == "Wrong url host":
             msg = update.effective_message.reply_text(markdown_parser(backup_message +
                                                                       "\nNote: the current message has some bad urls. "
                                                                       "Please update."),
-                                                      parse_mode=ParseMode.MARKDOWN)
+                                                      parse_mode='markdown')
             LOGGER.warning(message)
             LOGGER.warning(keyboard)
             LOGGER.exception("Could not parse! got invalid url host errors")
@@ -70,7 +71,7 @@ def send(update, message, keyboard, backup_message):
             msg = update.effective_message.reply_text(markdown_parser(backup_message +
                                                                       "\nNote: An error occured when sending the "
                                                                       "custom message. Please update."),
-                                                      parse_mode=ParseMode.MARKDOWN)
+                                                      parse_mode='markdown')
             LOGGER.exception()
 
     return msg
@@ -87,7 +88,7 @@ def new_member(update, context):
         for new_mem in new_members:
             # Give the owner a special welcome
             if new_mem.id == OWNER_ID:
-                update.effective_message.reply_text("Master is in the houseeee, let's get this party started!")
+                update.effective_message.reply_text(tld(chat.id, "Master is in the houseeee, let's get this party started!"))
                 continue
 
             # Don't welcome yourself
@@ -154,7 +155,7 @@ def left_member(update, context):
 
             # Give the owner a special goodbye
             if left_mem.id == OWNER_ID:
-                update.effective_message.reply_text("RIP Master")
+                update.effective_message.reply_text(tld(chat.id, "RIP Master"))
                 return
 
             # if media goodbye, use appropriate function for it
@@ -201,10 +202,10 @@ def welcome(update, context):
     if len(args) == 0 or args[0].lower() == "noformat":
         noformat = args and args[0].lower() == "noformat"
         pref, welcome_m, welcome_type = sql.get_welc_pref(chat.id)
-        update.effective_message.reply_text(
+        update.effective_message.reply_text(tld(chat.id, 
             "This chat has it's welcome setting set to: `{}`.\n*The welcome message "
-            "(not filling the {{}}) is:*".format(pref),
-            parse_mode=ParseMode.MARKDOWN)
+            "(not filling the {{}}) is:*").format(pref),
+            parse_mode='markdown')
 
         if welcome_type == sql.Types.BUTTON_TEXT:
             buttons = sql.get_welc_buttons(chat.id)
@@ -223,20 +224,20 @@ def welcome(update, context):
                 ENUM_FUNC_MAP[welcome_type](chat.id, welcome_m)
 
             else:
-                ENUM_FUNC_MAP[welcome_type](chat.id, welcome_m, parse_mode=ParseMode.MARKDOWN)
+                ENUM_FUNC_MAP[welcome_type](chat.id, welcome_m, parse_mode='markdown')
 
     elif len(args) >= 1:
         if args[0].lower() in ("on", "yes"):
             sql.set_welc_preference(str(chat.id), True)
-            update.effective_message.reply_text("I'll be polite!")
+            update.effective_message.reply_text(tld(chat.id, "I'll be polite!"))
 
         elif args[0].lower() in ("off", "no"):
             sql.set_welc_preference(str(chat.id), False)
-            update.effective_message.reply_text("I'm sulking, not saying hello anymore.")
+            update.effective_message.reply_text(tld(chat.id, "I'm sulking, not saying hello anymore."))
 
         else:
             # idek what you're writing, say yes or no
-            update.effective_message.reply_text("I understand 'on/yes' or 'off/no' only!")
+            update.effective_message.reply_text(tld(chat.id, "I understand 'on/yes' or 'off/no' only!"))
 
 
 @run_async
@@ -248,10 +249,10 @@ def goodbye(update, context):
     if len(args) == 0 or args[0] == "noformat":
         noformat = args and args[0] == "noformat"
         pref, goodbye_m, goodbye_type = sql.get_gdbye_pref(chat.id)
-        update.effective_message.reply_text(
+        update.effective_message.reply_text(tld(chat.id, 
             "This chat has it's goodbye setting set to: `{}`.\n*The goodbye  message "
-            "(not filling the {{}}) is:*".format(pref),
-            parse_mode=ParseMode.MARKDOWN)
+            "(not filling the {{}}) is:*").format(pref),
+            parse_mode='markdown')
 
         if goodbye_type == sql.Types.BUTTON_TEXT:
             buttons = sql.get_gdbye_buttons(chat.id)
@@ -270,20 +271,20 @@ def goodbye(update, context):
                 ENUM_FUNC_MAP[goodbye_type](chat.id, goodbye_m)
 
             else:
-                ENUM_FUNC_MAP[goodbye_type](chat.id, goodbye_m, parse_mode=ParseMode.MARKDOWN)
+                ENUM_FUNC_MAP[goodbye_type](chat.id, goodbye_m, parse_mode='markdown')
 
     elif len(args) >= 1:
         if args[0].lower() in ("on", "yes"):
             sql.set_gdbye_preference(str(chat.id), True)
-            update.effective_message.reply_text("I'll be sorry when people leave!")
+            update.effective_message.reply_text(tld(chat.id, "I'll be sorry when people leave!"))
 
         elif args[0].lower() in ("off", "no"):
             sql.set_gdbye_preference(str(chat.id), False)
-            update.effective_message.reply_text("They leave, they're dead to me.")
+            update.effective_message.reply_text(tld(chat.id, "They leave, they're dead to me."))
 
         else:
             # idek what you're writing, say yes or no
-            update.effective_message.reply_text("I understand 'on/yes' or 'off/no' only!")
+            update.effective_message.reply_text(tld(chat.id, "I understand 'on/yes' or 'off/no' only!"))
 
 
 @run_async
@@ -317,7 +318,7 @@ def reset_welcome(update, context) -> str:
     chat = update.effective_chat  # type: Optional[Chat]
     user = update.effective_user  # type: Optional[User]
     sql.set_custom_welcome(chat.id, sql.DEFAULT_WELCOME, sql.Types.TEXT)
-    update.effective_message.reply_text("Successfully reset welcome message to default!")
+    update.effective_message.reply_text(tld(chat.id, "Successfully reset welcome message to default!"))
     return "<b>{}:</b>" \
            "\n#RESET_WELCOME" \
            "\n<b>Admin:</b> {}" \
@@ -354,7 +355,7 @@ def reset_goodbye(update, context) -> str:
     chat = update.effective_chat  # type: Optional[Chat]
     user = update.effective_user  # type: Optional[User]
     sql.set_custom_gdbye(chat.id, sql.DEFAULT_GOODBYE, sql.Types.TEXT)
-    update.effective_message.reply_text("Successfully reset goodbye message to default!")
+    update.effective_message.reply_text(tld(chat.id, "Successfully reset goodbye message to default!"))
     return "<b>{}:</b>" \
            "\n#RESET_GOODBYE" \
            "\n<b>Admin:</b> {}" \
@@ -373,14 +374,14 @@ def clean_welcome(update, context):
     if not args:
         clean_pref = sql.get_clean_pref(chat.id)
         if clean_pref:
-            update.effective_message.reply_text("I should be deleting welcome messages up to two days old.")
+            update.effective_message.reply_text(tld(chat.id, "I should be deleting welcome messages up to two days old."))
         else:
-            update.effective_message.reply_text("I'm currently not deleting old welcome messages!")
+            update.effective_message.reply_text(tld(chat.id, "I'm currently not deleting old welcome messages!"))
         return ""
 
     if args[0].lower() in ("on", "yes"):
         sql.set_clean_welcome(str(chat.id), True)
-        update.effective_message.reply_text("I'll try to delete old welcome messages!")
+        update.effective_message.reply_text(tld(chat.id, "I'll try to delete old welcome messages!"))
         return "<b>{}:</b>" \
                "\n#CLEAN_WELCOME" \
                "\n<b>Admin:</b> {}" \
@@ -388,7 +389,7 @@ def clean_welcome(update, context):
                                                                          mention_html(user.id, user.first_name))
     elif args[0].lower() in ("off", "no"):
         sql.set_clean_welcome(str(chat.id), False)
-        update.effective_message.reply_text("I won't delete old welcome messages.")
+        update.effective_message.reply_text(tld(chat.id, "I won't delete old welcome messages."))
         return "<b>{}:</b>" \
                "\n#CLEAN_WELCOME" \
                "\n<b>Admin:</b> {}" \
@@ -396,7 +397,7 @@ def clean_welcome(update, context):
                                                                           mention_html(user.id, user.first_name))
     else:
         # idek what you're writing, say yes or no
-        update.effective_message.reply_text("I understand 'on/yes' or 'off/no' only!")
+        update.effective_message.reply_text(tld(chat.id, "I understand 'on/yes' or 'off/no' only!"))
         return ""
 
 
@@ -428,7 +429,7 @@ WELC_HELP_TXT = "Your group's welcome/goodbye messages can be personalised in mu
 @run_async
 @user_admin
 def welcome_help(update, context):
-    update.effective_message.reply_text(WELC_HELP_TXT, parse_mode=ParseMode.MARKDOWN)
+    update.effective_message.reply_text(WELC_HELP_TXT, parse_mode='markdown')
 
 
 # TODO: get welcome data from group butler snap

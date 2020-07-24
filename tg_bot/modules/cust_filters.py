@@ -17,6 +17,7 @@ from tg_bot.modules.helper_funcs.misc import build_keyboard
 from tg_bot.modules.helper_funcs.string_handling import split_quotes, button_markdown_parser
 from tg_bot.modules.sql import cust_filters_sql as sql
 from tg_bot.modules.helper_funcs.handlers import CustomCommandHandler
+from tg_bot.modules.translations.strings import tld
 
 HANDLER_GROUP = 10
 BASIC_FILTER_STRING = "*Filters in this chat:*\n"
@@ -28,7 +29,7 @@ def list_handlers(update, context):
     all_handlers = sql.get_chat_triggers(chat.id)
 
     if not all_handlers:
-        update.effective_message.reply_text("No filters are active here!")
+        update.effective_message.reply_text(tld(chat.id, "No filters are active here!"))
         return
 
     filter_list = BASIC_FILTER_STRING
@@ -74,7 +75,7 @@ def filters(update, context):
         content, buttons = button_markdown_parser(extracted[1], entities=msg.parse_entities(), offset=offset)
         content = content.strip()
         if not content:
-            msg.reply_text("There is no note message - You can't JUST have buttons, you need a message to go with it!")
+            msg.reply_text(tld(chat.id, "There is no note message - You can't JUST have buttons, you need a message to go with it!"))
             return
 
     elif msg.reply_to_message and msg.reply_to_message.sticker:
@@ -102,7 +103,7 @@ def filters(update, context):
         is_video = True
 
     else:
-        msg.reply_text("You didn't specify what to reply with!")
+        msg.reply_text(tld(chat.id, "You didn't specify what to reply with!"))
         return
 
     # Add the filter
@@ -114,7 +115,7 @@ def filters(update, context):
     sql.add_filter(chat.id, keyword, content, is_sticker, is_document, is_image, is_audio, is_voice, is_video,
                    buttons)
 
-    msg.reply_text("Handler '{}' added!".format(keyword))
+    msg.reply_text(tld(chat.id, "Handler '{}' added!").format(keyword))
     raise DispatcherHandlerStop
 
 
@@ -130,16 +131,16 @@ def stop_filter(update, context):
     chat_filters = sql.get_chat_triggers(chat.id)
 
     if not chat_filters:
-        update.effective_message.reply_text("No filters are active here!")
+        update.effective_message.reply_text(tld(chat.id, "No filters are active here!"))
         return
 
     for keyword in chat_filters:
         if keyword == args[1]:
             sql.remove_filter(chat.id, args[1])
-            update.effective_message.reply_text("Yep, I'll stop replying to that.")
+            update.effective_message.reply_text(tld(chat.id, "Yep, I'll stop replying to that."))
             raise DispatcherHandlerStop
 
-    update.effective_message.reply_text("That's not a current filter - run /filters for all active filters.")
+    update.effective_message.reply_text(tld(chat.id, "That's not a current filter - run /filters for all active filters."))
 
 
 @run_async
@@ -178,9 +179,9 @@ def reply_filter(update, context):
                                        reply_markup=keyboard)
                 except BadRequest as excp:
                     if excp.message == "Unsupported url protocol":
-                        message.reply_text("You seem to be trying to use an unsupported url protocol. Telegram "
+                        message.reply_text(tld(chat.id, "You seem to be trying to use an unsupported url protocol. Telegram "
                                            "doesn't support buttons for some protocols, such as tg://. Please try "
-                                           "again, or ask in @MarieSupport for help.")
+                                           "again, or ask in @MarieSupport for help."))
                     elif excp.message == "Reply message not found":
                         context.bot.send_message(chat.id, filt.reply, parse_mode=ParseMode.MARKDOWN,
                                          disable_web_page_preview=True,

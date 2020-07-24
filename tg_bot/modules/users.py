@@ -87,7 +87,7 @@ def log_user(update, context):
 
 
 @run_async
-def chats(update, context):
+def chatlist(update, context):
     all_chats = sql.get_all_chats() or []
     chatfile = 'List of chats.\n'
     for chat in all_chats:
@@ -101,7 +101,7 @@ def chats(update, context):
 
 def __user_info__(user_id):
     if user_id == dispatcher.bot.id:
-        return """I've seen them in... Wow. Are they stalking me? They're in all the same places I am... oh. It's me."""
+        return """I'm in <code>{}</code> chats.""".format(sql.num_chats())
     num_chats = sql.get_user_num_chats(user_id)
     return "" #"I've seen them in <code>{}</code> chats in total.""".format(num_chats)
 
@@ -124,7 +124,7 @@ __mod_name__ = "Users"
 
 BROADCAST_HANDLER = CommandHandler("broadcast", broadcast, filters=Filters.user(OWNER_ID))
 USER_HANDLER = MessageHandler(Filters.all & Filters.group, log_user)
-CHATLIST_HANDLER = CustomCommandHandler("chatlist", chats, filters=Filters.user(OWNER_ID))
+CHATLIST_HANDLER = CustomCommandHandler("chatlist", chatlist, filters=Filters.user(OWNER_ID))
 
 dispatcher.add_handler(USER_HANDLER, USERS_GROUP)
 dispatcher.add_handler(BROADCAST_HANDLER)

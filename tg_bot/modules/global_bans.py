@@ -66,7 +66,7 @@ def gban(update, context):
         message.reply_text("OOOH someone's trying to gban a support user! *grabs popcorn*")
         return
 
-    if user_id is context.bot.id:
+    if user_id == context.bot.id:
         message.reply_text("-_- So funny, lets gban myself why don't I? Nice try.")
         return
 
@@ -269,8 +269,6 @@ def __user_info__(user_id):
 
     text = "Globally banned: <b>{}</b>"
     
-    if user_id is OWNER_ID:
-        return ""
     if int(user_id) in SUDO_USERS + SUPPORT_USERS:
         return ""
     if is_gbanned:
